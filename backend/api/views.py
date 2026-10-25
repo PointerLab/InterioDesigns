@@ -12,6 +12,7 @@ from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from . import notifications
 from .models import (
     Consultation,
     ContactLead,
@@ -303,7 +304,7 @@ class ConsultationListCreateView(generics.ListCreateAPIView):
         return Consultation.objects.filter(user=self.request.user).select_related("estimate")
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        notifications.consultation_booked(serializer.save(user=self.request.user))
 
 
 class ConsultationCancelView(APIView):
@@ -318,6 +319,7 @@ class ConsultationCancelView(APIView):
             )
         consultation.status = Consultation.Status.CANCELLED
         consultation.save(update_fields=["status", "updated_at"])
+        notifications.consultation_cancelled_by_customer(consultation)
         return Response(ConsultationSerializer(consultation, context={"request": request}).data)
 
 
@@ -327,7 +329,7 @@ class ContactView(APIView):
     def post(self, request):
         serializer = ContactSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        notifications.contact_received(serializer.save())
         return Response(
             {"detail": "Thanks for writing to us. We usually reply within one working day."},
             status=status.HTTP_201_CREATED,
@@ -468,6 +470,11 @@ class StaffConsultationUpdateView(generics.UpdateAPIView):
     serializer_class = StaffConsultationSerializer
     queryset = Consultation.objects.select_related("user", "user__profile", "estimate")
     http_method_names = ["patch"]
+
+    def perform_update(self, serializer):
+        old_status, old_note = serializer.instance.status, serializer.instance.staff_note
+        consultation = serializer.save()
+        notifications.consultation_updated_by_staff(consultation, old_status, old_note)
 
 
 class StaffMessageListView(generics.ListAPIView):

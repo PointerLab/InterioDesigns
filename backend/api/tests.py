@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
+from django.core import mail
 from django.core.cache import cache
 from django.core.management import call_command
 from django.test import TestCase
@@ -261,6 +262,8 @@ class ConsultationTests(SeededTestCase):
         consultation_id = response.json()["id"]
         cancelled = self.client.post(f"/api/consultations/{consultation_id}/cancel/")
         self.assertEqual(cancelled.json()["status"], "cancelled")
+        self.assertIn("cancelled their consultation", mail.outbox[-1].subject)
+        self.assertEqual(mail.outbox[-1].to, ["staff@example.com"])
         # A cancelled slot can be booked again.
         self.assertEqual(self.book().status_code, 201)
 
@@ -280,6 +283,37 @@ class ConsultationTests(SeededTestCase):
             sunday += timedelta(days=1)
         self.assertEqual(self.book(date=sunday.isoformat()).status_code, 400)
         self.assertEqual(self.book(time_slot="13:00").status_code, 400)
+
+    def test_booking_emails_the_customer_and_staff(self):
+        self.client.force_authenticate(self.user)
+        self.book()
+        self.assertEqual([m.to for m in mail.outbox], [["user@example.com"], ["staff@example.com"]])
+        self.assertIn("received your consultation request", mail.outbox[0].subject)
+        self.assertIn("Kitchen ideas", mail.outbox[1].body)
+
+    def test_staff_updates_email_the_customer(self):
+        self.client.force_authenticate(self.user)
+        consultation_id = self.book().json()["id"]
+        mail.outbox.clear()
+        self.client.force_authenticate(self.staff)
+        url = f"/api/staff/consultations/{consultation_id}/"
+
+        self.client.patch(url, {"status": "confirmed", "staff_note": "Bring floor plans"}, format="json")
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ["user@example.com"])
+        self.assertIn("confirmed", mail.outbox[0].subject)
+        self.assertIn("Bring floor plans", mail.outbox[0].body)
+
+        self.client.patch(url, {"status": "confirmed", "staff_note": "Bring floor plans"}, format="json")
+        self.assertEqual(len(mail.outbox), 1, "nothing changed, so no email")
+        self.client.patch(url, {"staff_note": "Parking is at the back"}, format="json")
+        self.assertIn("note about your consultation", mail.outbox[-1].subject)
+
+    def test_staff_notification_list_overrides_staff_users(self):
+        self.client.force_authenticate(self.user)
+        with self.settings(STAFF_NOTIFICATION_EMAILS=["studio@example.com"]):
+            self.book()
+        self.assertEqual(mail.outbox[-1].to, ["studio@example.com"])
 
     def test_site_visit_needs_address(self):
         self.client.force_authenticate(self.user)
@@ -305,6 +339,8 @@ class ContactTests(SeededTestCase):
         )
         self.assertEqual(response.status_code, 201)
         self.assertEqual(ContactLead.objects.count(), 1)
+        self.assertEqual(mail.outbox[0].to, ["staff@example.com"])
+        self.assertIn("café", mail.outbox[0].body)
 
     def test_contact_validation(self):
         response = self.client.post("/api/contact/", {"name": "", "email": "bad", "message": "hi"}, format="json")

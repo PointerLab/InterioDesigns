@@ -183,3 +183,5 @@ if EMAIL_HOST:
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "INTERIO <no-reply@interio.local>")
+# Who hears about new bookings and contact messages. Empty means every staff user.
+STAFF_NOTIFICATION_EMAILS = env_list("STAFF_NOTIFICATION_EMAILS")
