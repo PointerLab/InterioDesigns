@@ -52,7 +52,7 @@ These accounts are created by `python manage.py seed` (see [Quick start](#quick-
 **For staff** (users with `is_staff`)
 
 - Overview of customers, estimates, pipeline value, bookings to confirm and open messages.
-- Estimates & leads: search, filter, full breakdown per lead, CSV export.
+- Estimates & leads: search, filter, full breakdown per lead, quotation PDF, CSV export.
 - Consultations: confirm / complete / cancel, add a note the customer sees.
 - Messages from the contact form: reply by email, mark resolved.
 - Pricing & catalog (packages, rates, furniture with photos, services, city multipliers, gallery designs with image
@@ -211,8 +211,8 @@ npm run build
 
 ## Notes
 
-- The planning documents (`prd`, `tech stack`, `todo.md`) describe a Next.js/Express stack. The project was
-  built with React + Vite and Django instead; the features follow the PRD.
+- The planning documents are `prd` (requirements), `design doc` (visual direction), `tech stack` (what is used,
+  and how it differs from the first Next.js/Express plan) and `todo.md` (progress against the PRD).
 - Studio contact details shown on the site (email, phone, address) are placeholders in
   `frontend/src/lib/site.ts`.
 - All prices are indicative. Final costs are confirmed after a site measurement.
