@@ -1,203 +1,128 @@
 # TECH_STACK.md
-## Interior Design & Renovation Cost Estimation Web App
+## INTERIO – Interior Design & Renovation Cost Estimation Web App
 
 ---
 
 ## 1. Overview
 
-This document defines the complete technology stack for the Interior Design & Renovation Cost Estimation Web Application.  
-The stack is optimized for:
-- Fast MVP development
-- Low operational cost
-- Scalability
-- SEO and lead generation
-- Clean admin and estimation workflows
+This is the stack the project is built with. The first plan used Next.js, Express, Prisma and NextAuth; it was
+changed to React + Vite on the frontend and Django on the backend, which gave an admin panel, ORM, migrations
+and auth out of the box. The table at the end maps the original plan to what is used now.
+
+Goals stayed the same:
+- Fast development for a small team
+- Free or near-free hosting
+- Transparent, admin-editable pricing
+- Lead generation for the studio
 
 ---
 
-## 2. Frontend Stack
+## 2. Frontend (`frontend/`)
 
-### Framework
-- **Next.js (React Framework)**
-- **TypeScript**
+| Purpose            | Choice                                                         |
+| ------------------ | -------------------------------------------------------------- |
+| Framework          | React 18 + TypeScript, built with Vite                         |
+| Routing            | React Router 6 (pages load on demand)                          |
+| Server data        | TanStack Query (caching, retries, live estimate preview)       |
+| Styling            | Tailwind CSS with warm design tokens in `src/index.css`        |
+| UI primitives      | Radix UI (dialog, select, dropdown, tooltip, ...)              |
+| Icons              | Custom SVG set in `src/components/icons.tsx`                   |
+| Animation          | framer-motion (respects the OS "reduce motion" setting)        |
+| Notifications      | sonner toasts                                                  |
+| Tests              | Vitest + Testing Library (jsdom)                               |
+| Code quality       | ESLint + Prettier                                              |
 
-### Styling & UI
-- **Tailwind CSS**
-- **ShadCN UI**
-- **Radix UI (via ShadCN)**
-
-### Frontend Responsibilities
-- Landing pages (SEO optimized)
-- Multi-step cost estimation wizard
-- Package comparison UI
-- Admin dashboard UI
-- Responsive design (mobile-first)
-
----
-
-## 3. Backend Stack
-
-### Runtime & Framework
-- **Node.js**
-- **Express.js**
-- **TypeScript**
-
-### Backend Responsibilities
-- Cost calculation engine
-- Package & pricing management
-- Furniture & renovation logic
-- Lead management
-- PDF quotation generation
-- Authentication & authorization
+Responsibilities: landing and marketing pages, the 6-step estimate wizard, package comparison, design gallery,
+customer dashboard, staff panel, shared estimate pages.
 
 ---
 
-## 4. Database Layer
+## 3. Backend (`backend/`)
 
-### Database
-- **PostgreSQL**
+| Purpose            | Choice                                                         |
+| ------------------ | -------------------------------------------------------------- |
+| Framework          | Django 5.2 + Django REST Framework                             |
+| Auth               | Simple JWT (access + refresh tokens, blacklist on logout)      |
+| Admin panel        | Django admin (pricing, catalog, designs, leads)                |
+| PDF quotations     | ReportLab                                                      |
+| Email              | Django email (SMTP, or printed to the console in development)   |
+| CORS               | django-cors-headers                                            |
+| Static files       | WhiteNoise                                                     |
+| App server         | gunicorn                                                       |
+| Tests              | Django TestCase + DRF APIClient                                |
 
-### ORM
-- **Prisma ORM**
+Responsibilities: cost estimation engine (`api/pricing.py`), packages and pricing, furniture and renovation
+options, saved estimates and share links, PDF quotations, consultations, contact messages, staff APIs,
+email notifications, authentication.
 
-### Data Managed
-- Packages (Basic / Standard / Premium)
-- Pricing rules (per sq. ft)
-- Furniture catalog
-- Renovation options
-- Location multipliers
-- Users & roles
-- Generated estimates
-- Leads
+---
+
+## 4. Database
+
+- **SQLite** in development (no setup needed)
+- **PostgreSQL** in production through `DATABASE_URL` (Neon, Supabase or any host)
+- Schema managed with Django migrations; default catalog loaded with `python manage.py seed`
+
+Data: packages, rates, furniture, services, city multipliers, users and profiles, estimates (with a stored
+snapshot of the result), gallery designs, saved designs, consultations, contact messages.
 
 ---
 
 ## 5. Authentication & Authorization
 
-- **NextAuth.js**
-- Email / Google authentication
-- Role-based access:
-  - Admin
-  - Sales
-  - Viewer (optional)
+- Email + password sign up and sign in
+- JWT access token (60 min) and single-use refresh token (7 days)
+- Logout and password change revoke refresh tokens
+- Roles: customer, and staff (`is_staff`) for the staff panel and Django admin
+- Rate limiting on login, signup, password reset and the contact form
 
 ---
 
 ## 6. Cost Estimation Engine
 
-### Type
-- Rule-based pricing engine
+Rule-based, every rate editable in the admin:
 
-### Logic
-Base Cost = Area (sq.ft) × Package Rate
-Total Cost = Base Cost
-+ Furniture Cost
-+ Renovation Add-ons
-× Location Multiplier
-
-
-### Characteristics
-- Configurable via admin panel
-- City-based price adjustment
-- Package-based rules
+```
+base      = carpet area × package rate per sq.ft
+furniture = Σ item price × quantity × package furniture multiplier
+services  = Σ per-sq.ft services × area + Σ per-unit services × quantity
+subtotal  = base + furniture + services
+total     = subtotal × city multiplier + 18% GST   (range shown as ±10%)
+```
 
 ---
 
-## 7. PDF & Document Generation
+## 7. Hosting
 
-- **PDFKit** or **Puppeteer**
+| Part      | Service | Config                 |
+| --------- | ------- | ---------------------- |
+| Frontend  | Vercel  | `frontend/vercel.json` |
+| Backend   | Render  | `render.yaml`          |
+| Database  | Neon    | `DATABASE_URL`         |
 
-Used for:
-- Downloadable cost estimation PDFs
-- Client-ready quotations
-- Branding-ready templates
-
----
-
-## 8. File & Media Storage
-
-- **Cloudinary**
-
-Used for:
-- Furniture images
-- Material previews
-- Generated PDF storage (optional)
+See "Deploying" in README.md. All three have free plans.
 
 ---
 
-## 9. Hosting & Deployment
+## 8. Planned vs. used
 
-### Frontend
-- **Vercel**
-
-### Backend
-- **Render** or **Railway**
-
-### Database
-- **Neon (PostgreSQL)**
-
-### CI/CD
-- GitHub → Auto-deploy on push
-
----
-
-## 10. Admin Panel
-
-### Built With
-- Next.js (same codebase)
-- Role-protected routes
-
-### Admin Capabilities
-- Manage packages & pricing
-- Configure furniture rates
-- Set location multipliers
-- View & export leads
-- Update PDF templates
+| Original plan        | Used instead                         | Why                                               |
+| -------------------- | ------------------------------------ | ------------------------------------------------- |
+| Next.js              | React + Vite                         | Simple SPA with a separate API; fast dev server   |
+| ShadCN UI            | Radix primitives + custom styling    | Kept only what is used; avoids the template look  |
+| Node.js + Express    | Django + DRF                         | Built-in admin, ORM, migrations and auth          |
+| Prisma               | Django ORM                           | Comes with Django                                 |
+| NextAuth.js          | Simple JWT                           | Works with a separate frontend                    |
+| PDFKit / Puppeteer   | ReportLab                            | Pure Python, no headless browser needed           |
+| Cloudinary           | Django file uploads                  | Enough at this scale                              |
+| Google Analytics, Sentry | Not added yet                    | Listed in todo.md                                 |
 
 ---
 
-## 11. Analytics & Monitoring
+## 9. Future Scalability
 
-- **Google Analytics** – user behavior
-- **Sentry** – error tracking
-- **PostHog (optional)** – product analytics
-
----
-
-## 12. Security & Performance
-
-- HTTPS enforced
-- Input validation
-- Environment-based secrets
-- Rate limiting (API)
-- Optimized SSR & caching
-
----
-
-## 13. Estimated Monthly Cost
-
-| Service        | Cost        |
-|---------------|------------|
-| Vercel        | Free       |
-| Render        | Free / ₹500|
-| Neon DB       | Free       |
-| Cloudinary    | Free       |
-| **Total**     | ₹0 – ₹1,000|
-
----
-
-## 14. Future Scalability
-
-- Add Redis for caching
-- Introduce background jobs
-- Vendor marketplace integration
-- AI-based recommendations
-- Mobile app (React Native)
-
----
-
-## 15. Conclusion
-
-This tech stack provides a strong foundation for building a scalable, cost-efficient, and professional interior design cost estimation platform suitable for MVP launch and future enterprise expansion.
-
----
+- Object storage (S3, Cloudinary) for uploaded images
+- Redis for caching and rate-limit counters
+- Background jobs for emails
+- CI to run tests on every push
+- Analytics and error tracking

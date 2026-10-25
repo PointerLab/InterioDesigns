@@ -1,188 +1,177 @@
 # TODO.md
-## InteriorPro – Interior Design & Renovation Cost Estimation Web App
+## INTERIO – Interior Design & Renovation Cost Estimation Web App
 
-This document breaks down all product features into actionable development tasks
-based on the PRD, Tech Stack, and Project Description.
+Progress against the PRD. The original plan used Next.js, Express and Prisma; the project is built with
+React + Vite and Django instead (see `tech stack`), so tasks are listed against what was actually built.
+
+Legend: `[x]` done · `[ ]` not done · ~~struck through~~ replaced by another approach
 
 ---
 
 ## PHASE 0 – PROJECT SETUP & FOUNDATION
 
 ### 0.1 Repository & Tooling
-- [ ] Create GitHub repository
-- [ ] Add README.md
-- [ ] Add TECH_STACK.md
-- [ ] Add TODO.md
-- [ ] Configure ESLint + Prettier
-- [ ] Setup environment variables (.env)
+- [x] Create GitHub repository
+- [x] Add README.md (setup, logins, features, API, deploy guide)
+- [x] Add tech stack document
+- [x] Add TODO.md
+- [x] Configure ESLint + Prettier
+- [x] Environment variables (`backend/.env.example`, `frontend/.env.example`)
 
 ### 0.2 Frontend Setup
-- [ ] Initialize Next.js (TypeScript)
-- [ ] Install Tailwind CSS
-- [ ] Setup ShadCN UI
-- [ ] Configure absolute imports
-- [ ] Setup basic layout (Header / Footer)
+- [x] React 18 + Vite + TypeScript (~~Next.js~~)
+- [x] Tailwind CSS
+- [x] Radix UI primitives (trimmed shadcn components, custom SVG icon set)
+- [x] Absolute imports (`@/`)
+- [x] Layout: header, footer, dashboard layout
 
 ### 0.3 Backend Setup
-- [ ] Initialize Node.js + Express
-- [ ] Configure TypeScript
-- [ ] Setup folder structure (controllers, services, routes)
-- [ ] Setup CORS & security middleware
-- [ ] Create health-check API
+- [x] Django 5.2 + Django REST Framework (~~Node.js + Express~~)
+- [x] Apps: `accounts` (users) and `api` (pricing, estimates, gallery, consultations, staff)
+- [x] CORS, rate limiting, HTTPS settings for production
+- [x] Health-check API (`/api/health/`)
 
 ### 0.4 Database Setup
-- [ ] Setup PostgreSQL (Neon)
-- [ ] Install Prisma ORM
-- [ ] Initialize Prisma schema
-- [ ] Setup migrations
-- [ ] Seed initial data
+- [x] SQLite for development, PostgreSQL (Neon) through `DATABASE_URL`
+- [x] Django ORM and migrations (~~Prisma~~)
+- [x] Seed command (`python manage.py seed`)
 
 ---
 
 ## PHASE 1 – CORE DOMAIN MODELS
 
 ### 1.1 User & Roles
-- [ ] Create User model
-- [ ] Add role field (ADMIN, SALES)
-- [ ] Integrate NextAuth.js
-- [ ] Protect admin routes
-- [ ] Session handling
+- [x] User accounts with profile (phone, city)
+- [x] Customer and staff roles (`is_staff`); ~~separate SALES role~~ (staff covers it)
+- [x] JWT authentication with refresh, logout and session revocation (~~NextAuth.js~~)
+- [x] Protected customer and staff routes
+- [x] Password change and email password reset
 
 ### 1.2 Property & Project Models
-- [ ] PropertyType model (Residential, Commercial, Office)
-- [ ] ProjectType model (New, Renovation)
-- [ ] Area & room configuration
+- [x] Property types (residential, commercial, office) with size presets
+- [x] Project types (new, renovation)
+- [x] Area and room inputs; kitchen-only and wardrobe-only scopes
 
 ### 1.3 Package Models
-- [ ] Package model (Basic, Standard, Premium)
-- [ ] Package pricing per sq.ft
-- [ ] Package description & inclusions
-- [ ] Admin-configurable package data
+- [x] Basic / Standard / Premium packages
+- [x] Rate per sq.ft and furniture grade multiplier
+- [x] Description, inclusions, timeline and warranty
+- [x] Editable in the Django admin
 
 ---
 
 ## PHASE 2 – FURNITURE & RENOVATION MODULES
 
 ### 2.1 Furniture Module
-- [ ] FurnitureCategory model
-- [ ] FurnitureItem model
-- [ ] Pricing per unit / sq.ft
-- [ ] Package compatibility rules
-- [ ] Ready-made furniture flag
-- [ ] Furniture image support (Cloudinary)
+- [x] Furniture items grouped by category
+- [x] Pricing per unit / per sq.ft
+- [x] Package and property-type compatibility rules
+- [x] Ready-made furniture flag
+- [x] Furniture photos (uploaded in the admin; ~~Cloudinary~~)
 
 ### 2.2 Renovation Module
-- [ ] RenovationType model (Partial / Full)
-- [ ] RenovationOptions model:
-  - Flooring
-  - Painting
-  - Electrical
-  - Plumbing
-  - Ceiling
-- [ ] Pricing rules for renovation
-- [ ] Enable/disable per project type
+- [x] Services and renovation options (flooring, painting, electrical, plumbing, ceiling, ...)
+- [x] Pricing per sq.ft or per unit
+- [x] Enabled per project type (renovation-only work)
 
 ---
 
 ## PHASE 3 – COST ESTIMATION ENGINE
 
 ### 3.1 Pricing Logic
-- [ ] Implement base area × package rate logic
-- [ ] Add furniture cost aggregation
-- [ ] Add renovation cost aggregation
-- [ ] Apply location multiplier
-- [ ] Final cost calculation service
+- [x] Area × package rate
+- [x] Furniture at package grade
+- [x] Services and renovation work
+- [x] City multiplier and 18% GST
+- [x] Cost split by category and ±10% range (`backend/api/pricing.py`)
 
 ### 3.2 Location-Based Pricing
-- [ ] Location model (City)
-- [ ] Cost multiplier per city
-- [ ] Admin controls for multipliers
+- [x] City multipliers, editable in the admin
 
 ### 3.3 Timeline Estimation
-- [ ] Define timeline rules per package
-- [ ] Calculate estimated duration
-- [ ] Display weeks/months in UI
+- [x] Weeks from package, area, renovation and furniture volume
+- [x] Phase-by-phase timeline in the UI and PDF
 
 ---
 
 ## PHASE 4 – ESTIMATION WIZARD (FRONTEND)
 
 ### 4.1 Wizard Flow
-- [ ] Step 1: Property type selection
-- [ ] Step 2: New / Renovation selection
-- [ ] Step 3: Area & room inputs
-- [ ] Step 4: Package selection
-- [ ] Step 5: Furniture selection
-- [ ] Step 6: Renovation options
-- [ ] Step 7: Review & estimate
+- [x] Space → Size → Package → Furniture → Services → Review (6 steps)
 
 ### 4.2 UX Enhancements
-- [ ] Progress indicator
-- [ ] Validation at each step
-- [ ] Real-time price updates
-- [ ] Mobile responsiveness
+- [x] Step progress indicator
+- [x] Validation at each step
+- [x] Live running total
+- [x] Mobile layout with a sticky total bar
+- [x] Draft kept when signing in to save
 
 ---
 
 ## PHASE 5 – COST BREAKDOWN & OUTPUT
 
 ### 5.1 Cost Breakdown UI
-- [ ] Item-wise pricing table
-- [ ] Editable selections
-- [ ] Highlight package inclusions
-- [ ] Show timeline estimate
+- [x] Itemised breakdown
+- [x] Edit and recalculate saved estimates
+- [x] Package inclusions on the packages page and PDF
+- [x] Timeline estimate
+- [x] EMI calculator
 
 ### 5.2 PDF Generation
-- [ ] Design quotation PDF template
-- [ ] Generate PDF using backend
-- [ ] Include branding & disclaimer
-- [ ] Download PDF functionality
-- [ ] Optional PDF storage
+- [x] Branded quotation PDF built on the server (ReportLab)
+- [x] Disclaimer and 30-day validity
+- [x] Download for customers and staff
+- [ ] Store generated PDFs (optional; they are generated on demand instead)
+
+### 5.3 Sharing
+- [x] Read-only share link, sent by WhatsApp or email, can be turned off
 
 ---
 
 ## PHASE 6 – ADMIN PANEL
 
 ### 6.1 Admin Dashboard
-- [ ] Admin login
-- [ ] Role-based access
-- [ ] Dashboard overview metrics
+- [x] Staff login and staff-only panel (`/staff`)
+- [x] Overview metrics (customers, estimates, pipeline value, bookings, messages)
 
-### 6.2 Pricing Management
-- [ ] CRUD packages
-- [ ] Update per sq.ft rates
-- [ ] Furniture pricing controls
-- [ ] Renovation pricing controls
-- [ ] Location multipliers management
+### 6.2 Pricing Management (Django admin)
+- [x] Packages and rates
+- [x] Furniture prices and photos
+- [x] Services and renovation prices
+- [x] City multipliers
+- [x] Gallery designs with image upload
 
 ### 6.3 Lead Management
-- [ ] Save estimates as leads
-- [ ] View all leads
-- [ ] Export leads (CSV / PDF)
+- [x] Saved estimates as leads with search and filters
+- [x] CSV export and per-lead quotation PDF
+- [x] Consultations: confirm, complete, cancel, staff notes
+- [x] Contact messages: reply by email, mark resolved
+- [x] Email notifications to staff and customers
 
 ---
 
 ## PHASE 7 – LANDING PAGES & SEO
 
 ### 7.1 Marketing Pages
-- [ ] Home page
-- [ ] Package comparison page
-- [ ] How it works page
-- [ ] Contact / consultation page
+- [x] Home page (day-to-night hero, how it works, featured designs)
+- [x] Package comparison page
+- [x] Design gallery and detail pages
+- [x] Contact page and consultation booking (with rescheduling)
+- [x] Privacy and terms pages
 
 ### 7.2 SEO Optimization
-- [ ] Meta tags
-- [ ] OpenGraph tags
+- [x] Meta description and OpenGraph tags
+- [x] Per-page titles
 - [ ] Sitemap
-- [ ] Page speed optimization
+- [x] Page speed: lazy-loaded routes, WebP hero frames, reduced-motion support
 
 ---
 
 ## PHASE 8 – ANALYTICS & MONITORING
 
-- [ ] Integrate Google Analytics
-- [ ] Setup Sentry for error tracking
-- [ ] Track estimation completion events
+- [ ] Google Analytics
+- [ ] Sentry error tracking
+- [ ] Track estimate completions
 - [ ] Track lead conversions
 
 ---
@@ -190,38 +179,32 @@ based on the PRD, Tech Stack, and Project Description.
 ## PHASE 9 – DEPLOYMENT & RELEASE
 
 ### 9.1 Deployment
-- [ ] Deploy frontend to Vercel
-- [ ] Deploy backend to Render/Railway
-- [ ] Setup environment variables
-- [ ] Configure CI/CD
+- [x] Vercel config for the frontend (`frontend/vercel.json`)
+- [x] Render config for the backend (`render.yaml`) and Neon PostgreSQL
+- [ ] Deploy and share the live link
+- [ ] CI (run tests on every push)
 
 ### 9.2 Testing
-- [ ] Unit tests for pricing engine
-- [ ] API testing
-- [ ] Manual UI testing
+- [x] Pricing engine unit tests
+- [x] API tests (auth, estimates, gallery, consultations, staff, PDF, sharing)
+- [x] Frontend unit and component tests (Vitest + Testing Library)
+- [ ] Manual UI testing pass
 - [ ] Cross-device testing
 
 ---
 
-## PHASE 10 – FUTURE ENHANCEMENTS (POST-MVP)
+## PHASE 10 – FUTURE ENHANCEMENTS
 
-- [ ] EMI calculator
+- [x] EMI calculator
+- [x] WhatsApp quotation sharing
 - [ ] AI package recommendations
 - [ ] Vendor marketplace
 - [ ] AR / 3D interior previews
+- [ ] Multi-language support
 - [ ] Mobile app (React Native)
 
 ---
 
-## STATUS LEGEND
-- ⏳ Pending
-- 🔄 In Progress
-- ✅ Completed
-
----
-
 ## NOTE
-All prices are estimates only and must include a disclaimer
-stating that final costs may vary based on site conditions and material availability.
-
----
+All prices are estimates only. The site, PDF and API show a disclaimer that final costs depend on a site
+measurement, site conditions and material availability.

@@ -1,0 +1,48 @@
+# Render Blueprint for the Django API: https://render.com/docs/blueprint-spec
+# The React app is deployed separately on Vercel. See "Deploying" in README.md.
+services:
+  - type: web
+    name: interio-backend
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: >-
+      pip install -r requirements.txt &&
+      python manage.py collectstatic --noinput &&
+      python manage.py migrate --noinput &&
+      python manage.py seed --no-demo-users &&
+      (python manage.py createsuperuser --noinput || true)
+    startCommand: gunicorn backend.wsgi --bind 0.0.0.0:$PORT
+    healthCheckPath: /api/health/
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.8"
+      - key: DJANGO_DEBUG
+        value: "false"
+      - key: DJANGO_SECURE_HTTPS
+        value: "true"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_ALLOWED_HOSTS
+        value: ".onrender.com"
+      # Neon (or any PostgreSQL) connection string ending in ?sslmode=require
+      - key: DATABASE_URL
+        sync: false
+      # The Vercel site, e.g. https://interio.vercel.app (used in emails and for CORS)
+      - key: FRONTEND_URL
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      # This service's own URL, e.g. https://interio-backend.onrender.com (Django admin login)
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false
+      # e.g. https://interio-backend.onrender.com/media/ so uploaded images load on the Vercel site
+      - key: MEDIA_URL
+        sync: false
+      # First admin account, created on the first deploy (use the email as the username)
+      - key: DJANGO_SUPERUSER_USERNAME
+        sync: false
+      - key: DJANGO_SUPERUSER_EMAIL
+        sync: false
+      - key: DJANGO_SUPERUSER_PASSWORD
+        sync: false

@@ -2,16 +2,28 @@
 logs
 *.log
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-venv
 
+# Node
 node_modules
 dist
 dist-ssr
 *.local
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Django
+backend/db.sqlite3
+backend/media/
+backend/staticfiles/
+
+# Environment files (see *.env.example)
+.env
+*.env
+!*.env.example
 
 # Editor directories and files
 .vscode/*
@@ -19,17 +31,4 @@ dist-ssr
 .idea
 .DS_Store
 *.suo
-*.ntvs*
-*.njsproj
-*.sln
 *.sw?
-
-backend/.env
-*.env
-*.env.local
-backend/__pycache__
-backend/api/__pycache__
-backend/db.sqlite3
-backend/auth/__pycache__
-backend/backend/__pycache__
-backend/path

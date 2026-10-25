@@ -1,10 +1,19 @@
 import * as React from "react";
 import * as SelectPrimitive from "@radix-ui/react-select";
-import { Check, ChevronDown, ChevronUp } from "lucide-react";
+import { IconCheck as Check, IconChevronDown as ChevronDown, IconChevronUp as ChevronUp } from "@/components/icons";
 
 import { cn } from "@/lib/utils";
 
-const Select = SelectPrimitive.Root;
+// Radix's hidden native <select> reports "" when the value is set before its option
+// has loaded. Options can never have an empty value, so ignore those changes.
+const Select = ({ onValueChange, ...props }: React.ComponentProps<typeof SelectPrimitive.Root>) => (
+  <SelectPrimitive.Root
+    onValueChange={(value) => {
+      if (value) onValueChange?.(value);
+    }}
+    {...props}
+  />
+);
 
 const SelectGroup = SelectPrimitive.Group;
 
@@ -17,7 +26,7 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+      "flex h-10 w-full items-center justify-between rounded-md border border-input bg-card px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
       className,
     )}
     {...props}
