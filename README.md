@@ -1,100 +1,179 @@
-# InterioDesigns
+# INTERIO – Interior Design & Renovation Estimator
 
-InterioDesigns is a full-stack web project with:
-- `frontend/`: React + Vite + TypeScript UI
-- `backend/`: Django API
+A full-stack web platform where people can price an interior project (home, office or shop), browse a design
+gallery, save estimates to their account and book a consultation with a designer. Studio staff get a panel to
+manage leads, bookings and messages, and control pricing through the Django admin.
 
-## Prerequisites
+- `frontend/` – React 18 + Vite + TypeScript + Tailwind CSS
+- `backend/` – Django 5.2 + Django REST Framework, JWT auth, SQLite (or PostgreSQL)
 
-- Node.js 18+ and npm
-- Python 3.11+
-- (Optional) PostgreSQL if you want to use `DATABASE_URL` instead of SQLite
+## Login credentials
 
-## Project Structure
+These accounts are created by `python manage.py seed` (see [Quick start](#quick-start)).
 
-- `frontend/` - client app
-- `backend/` - Django server and API
+| Account          | Email                 | Password           | Sign in at                                | Can access                                                           |
+| ---------------- | --------------------- | ------------------ | ----------------------------------------- | -------------------------------------------------------------------- |
+| Customer (demo)  | `demo@interio.local`  | `InterioDemo@123`  | http://localhost:8085/login               | Customer dashboard: estimates, saved designs, consultations, profile |
+| Staff / admin    | `admin@interio.local` | `InterioAdmin@123` | http://localhost:8085/login               | Staff panel at `/staff`: leads, consultations, messages              |
+| Django admin     | `admin@interio.local` | `InterioAdmin@123` | http://localhost:8085/admin/ (or http://127.0.0.1:8000/admin/) | Pricing, packages, furniture, services, cities, gallery designs, all data |
 
-## Backend Setup (Django)
+- The staff account is a Django superuser, so the same login works for the staff panel and the Django admin.
+- Django admin asks for a **Username**: use the email `admin@interio.local`.
+- The login page also shows these demo accounts while running in development mode.
+- You can also create your own customer account at http://localhost:8085/signup.
+- Running `seed` again won't reset a password that was changed. To reset one:
+  `python manage.py changepassword admin@interio.local`
+- To create another staff/admin user: `python manage.py createsuperuser` (use the email as the username).
+
+> These are development credentials for local use and demos. Change or remove them before putting the site
+> online (`python manage.py seed --no-demo-users` skips creating them).
+
+## Features
+
+**For customers**
+
+- **Cost estimator**: a 6-step wizard (space → size → package → furniture → services → review) with a live
+  running total. Covers new interiors and renovations for homes (1 BHK to villa), shops, showrooms, cafés and
+  offices, plus kitchen-only and wardrobe-only estimates.
+- **Transparent breakdown**: package work, itemised furniture and services, city price adjustment, 18% GST,
+  expected range, cost split by category and a phase-by-phase timeline.
+- **Saved estimates**: save, rename, edit and recalculate, delete, and download as PDF (print layout).
+  Anonymous visitors can use the whole estimator; answers are kept if they sign in to save.
+- **Design gallery**: filter by space, room and style, search, detail pages, "estimate this look", and a saved
+  designs shortlist.
+- **Consultations**: book a studio visit, video call or site visit in an open slot (Mon–Sat, no double
+  booking), attach an estimate, see status and notes from the studio, cancel.
+- **Account**: sign up, sign in, profile, change password, forgot/reset password by email.
+- **Package comparison** page with live sample totals, contact form, privacy and terms pages.
+
+**For staff** (users with `is_staff`)
+
+- Overview of customers, estimates, pipeline value, bookings to confirm and open messages.
+- Estimates & leads: search, filter, full breakdown per lead, CSV export.
+- Consultations: confirm / complete / cancel, add a note the customer sees.
+- Messages from the contact form: reply by email, mark resolved.
+- Pricing & catalog (packages, rates, furniture, services, city multipliers, gallery designs with image upload)
+  in the Django admin at `/admin/`.
+
+## Quick start
+
+You need **Python 3.10+** and **Node.js 18+**.
+
+### 1. Backend
 
 ```bash
 cd backend
 python3 -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-```
-
-### Backend Environment Variables
-
-Create or update `backend/.env`:
-
-```env
-DJANGO_SECRET_KEY=your-secret-key
-DJANGO_DEBUG=true
-# Optional: use PostgreSQL/Supabase instead of SQLite
-# DATABASE_URL=postgresql://user:password@host:5432/dbname?sslmode=require
-```
-
-Notes:
-- If `DATABASE_URL` is not set, backend uses `backend/db.sqlite3` by default.
-- `SUPABASE_URL` / `SUPABASE_DB_URL` are also supported as DB URL fallbacks.
-
-### Run Backend
-
-```bash
-cd backend
-source .venv/bin/activate
 python manage.py migrate
-python manage.py runserver
+python manage.py seed              # pricing catalog, cities, 22 gallery designs, demo accounts
+python manage.py runserver         # http://127.0.0.1:8000
 ```
 
-Backend runs at `http://127.0.0.1:8000`.
+`seed` is safe to run again; it updates the catalog without touching customer data.
 
-## Frontend Setup (React + Vite)
+### 2. Frontend (in a second terminal)
 
 ```bash
 cd frontend
 npm install
+npm run dev                        # http://localhost:8085
 ```
 
-### Frontend Environment Variables
+Open **http://localhost:8085**. The Vite dev server proxies `/api`, `/media` and `/admin` to Django, so no CORS
+setup is needed and the Django admin is also reachable at http://localhost:8085/admin/.
 
-Create `frontend/.env`:
+### 3. Sign in
 
-```env
-VITE_API_BASE_URL=http://127.0.0.1:8000/api
+Use the accounts listed under [Login credentials](#login-credentials).
+
+### Emails
+
+Without SMTP settings, emails (password reset links) are printed in the terminal running `runserver`.
+
+## Configuration
+
+Both apps work with no configuration. To change things, copy the examples:
+
+- `backend/.env.example` → `backend/.env` – secret key, debug, PostgreSQL `DATABASE_URL`, SMTP, frontend URL
+- `frontend/.env.example` → `frontend/.env` – backend address for the dev proxy
+
+## How the estimate is calculated
+
+```
+base      = carpet area × package rate per sq.ft        (design, civil and finishing work)
+furniture = Σ item price × quantity × package furniture multiplier
+services  = Σ per-sq.ft services × area + Σ per-unit services × quantity
+subtotal  = base + furniture + services
+total     = subtotal × city multiplier + 18% GST        (range shown as ±10%)
 ```
 
-### Run Frontend
+Timeline: package base weeks, +1 week per extra 600 sq.ft, +2 weeks for renovations, +1 week for large
+furniture orders. The engine lives in `backend/api/pricing.py`; every rate is editable in the admin.
+
+## Project structure
+
+```
+backend/
+  accounts/            users: register, login (JWT), profile, password change and reset
+  api/
+    models.py          packages, furniture, services, cities, estimates, designs, consultations, messages
+    pricing.py         cost estimation engine
+    views.py           REST endpoints (public, customer and staff)
+    seed_data.py       default catalog loaded by `manage.py seed`
+  backend/settings.py
+frontend/
+  public/images/       gallery and page images
+  public/frames/       day-to-night hero animation frames
+  src/
+    pages/             Home, Designs, Estimate wizard, Packages, Contact, auth/, dashboard/, staff/
+    components/        layout, estimate breakdown, shared UI, icons (custom SVG set)
+    lib/               API client (JWT + refresh), auth context, data hooks, formatting
+```
+
+## API overview
+
+All endpoints are under `/api/`. Authenticated requests send `Authorization: Bearer <access token>`.
+
+| Method      | Endpoint                                        | Access   |
+| ----------- | ----------------------------------------------- | -------- |
+| POST        | `auth/register/`, `auth/login/`                 | public   |
+| POST        | `auth/token/refresh/`                           | public   |
+| POST        | `auth/password-reset/`, `.../confirm/`          | public   |
+| GET, PATCH  | `auth/me/`                                      | customer |
+| POST        | `auth/change-password/`                         | customer |
+| GET         | `catalog/`                                      | public   |
+| POST        | `estimates/preview/`                            | public   |
+| GET, POST   | `estimates/`                                    | customer |
+| GET, PUT, PATCH, DELETE | `estimates/<id>/`                   | owner    |
+| GET         | `designs/`, `designs/<slug>/`                   | public   |
+| POST, DELETE | `designs/<slug>/save/`                         | customer |
+| GET         | `designs/saved/`                                | customer |
+| GET         | `consultations/slots/?date=YYYY-MM-DD`          | public   |
+| GET, POST   | `consultations/`                                | customer |
+| POST        | `consultations/<id>/cancel/`                    | owner    |
+| POST        | `contact/`                                      | public   |
+| GET         | `staff/overview/`, `staff/estimates/`, `staff/estimates/export/`, `staff/consultations/`, `staff/messages/` | staff |
+| PATCH       | `staff/consultations/<id>/`, `staff/messages/<id>/` | staff |
+
+## Tests and checks
 
 ```bash
+# backend
+cd backend && python manage.py test
+
+# frontend
 cd frontend
-npm run dev
-```
-
-Frontend runs at `http://127.0.0.1:5173` (default Vite port).
-
-## Development Workflow
-
-1. Start backend (`python manage.py runserver`) in one terminal.
-2. Start frontend (`npm run dev`) in another terminal.
-3. Open the frontend URL and use the app.
-
-## Useful Commands
-
-### Backend
-
-```bash
-python manage.py makemigrations
-python manage.py migrate
-python manage.py test
-```
-
-### Frontend
-
-```bash
+npm run test      # unit tests (vitest)
 npm run lint
-npm run test
 npm run build
-npm run preview
 ```
+
+## Notes
+
+- The planning documents (`prd`, `tech stack`, `todo.md`) describe a Next.js/Express stack. The project was
+  built with React + Vite and Django instead; the features follow the PRD.
+- Studio contact details shown on the site (email, phone, address) are placeholders in
+  `frontend/src/lib/site.ts`.
+- All prices are indicative. Final costs are confirmed after a site measurement.
