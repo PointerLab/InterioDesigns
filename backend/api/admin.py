@@ -14,6 +14,12 @@ from .models import (
 )
 
 
+def thumbnail_html(src: str):
+    if not src:
+        return "-"
+    return format_html('<img src="{}" style="height:40px;width:56px;object-fit:cover;border-radius:4px">', src)
+
+
 @admin.register(InteriorPackage)
 class InteriorPackageAdmin(admin.ModelAdmin):
     list_display = ("title", "tier", "rate_per_sqft", "furniture_multiplier", "base_timeline_weeks", "is_active")
@@ -23,10 +29,14 @@ class InteriorPackageAdmin(admin.ModelAdmin):
 
 @admin.register(FurnitureItem)
 class FurnitureItemAdmin(admin.ModelAdmin):
-    list_display = ("name", "category", "price_type", "unit_price", "is_ready_made", "is_active")
+    list_display = ("name", "thumbnail", "category", "price_type", "unit_price", "is_ready_made", "is_active")
     list_editable = ("unit_price", "is_active")
     list_filter = ("category", "price_type", "is_ready_made", "is_active")
     search_fields = ("name", "category")
+
+    @admin.display(description="Image")
+    def thumbnail(self, obj):
+        return thumbnail_html(obj.image_src)
 
 
 @admin.register(RenovationOption)
@@ -54,9 +64,7 @@ class DesignAdmin(admin.ModelAdmin):
 
     @admin.display(description="Image")
     def thumbnail(self, obj):
-        if not obj.image_src:
-            return "-"
-        return format_html('<img src="{}" style="height:40px;width:56px;object-fit:cover;border-radius:4px">', obj.image_src)
+        return thumbnail_html(obj.image_src)
 
 
 @admin.register(Estimate)

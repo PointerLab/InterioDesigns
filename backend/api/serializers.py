@@ -54,11 +54,13 @@ class PackageSerializer(serializers.ModelSerializer):
 
 
 class FurnitureItemSerializer(serializers.ModelSerializer):
+    image = serializers.CharField(source="image_src", read_only=True)
+
     class Meta:
         model = FurnitureItem
         fields = [
             "id", "name", "category", "description", "price_type", "unit_price", "compatible_packages",
-            "property_types", "is_ready_made",
+            "property_types", "is_ready_made", "image",
         ]
 
 

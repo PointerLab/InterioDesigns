@@ -77,10 +77,16 @@ class FurnitureItem(TimestampedModel):
     compatible_packages = models.JSONField(default=list, blank=True, help_text="Empty means every package.")
     property_types = models.JSONField(default=list, blank=True, help_text="Empty means every property type.")
     is_ready_made = models.BooleanField(default=False)
+    image = models.ImageField(upload_to="furniture/", blank=True, help_text="Upload a photo, or use Image URL below.")
+    image_url = models.CharField(max_length=500, blank=True)
     is_active = models.BooleanField(default=True)
 
     class Meta:
         ordering = ["category", "name"]
+
+    @property
+    def image_src(self) -> str:
+        return self.image.url if self.image else self.image_url
 
     def __str__(self) -> str:
         return self.name

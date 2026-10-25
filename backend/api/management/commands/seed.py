@@ -48,6 +48,7 @@ class Command(BaseCommand):
                     "compatible_packages": data.get("compatible_packages", []),
                     "property_types": data.get("property_types", []),
                     "is_ready_made": data.get("is_ready_made", False),
+                    "image_url": f"/images/{data['image']}" if data.get("image") else "",
                     "is_active": True,
                 },
             )

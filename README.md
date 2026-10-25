@@ -55,7 +55,8 @@ These accounts are created by `python manage.py seed` (see [Quick start](#quick-
 - Estimates & leads: search, filter, full breakdown per lead, CSV export.
 - Consultations: confirm / complete / cancel, add a note the customer sees.
 - Messages from the contact form: reply by email, mark resolved.
-- Pricing & catalog (packages, rates, furniture, services, city multipliers, gallery designs with image upload)
+- Pricing & catalog (packages, rates, furniture with photos, services, city multipliers, gallery designs with image
+  upload)
   in the Django admin at `/admin/`.
 
 ## Quick start

@@ -39,6 +39,7 @@ export const catalog: Catalog = {
       compatible_packages: [],
       property_types: ["residential"],
       is_ready_made: false,
+      image: "",
     },
     {
       id: 11,
@@ -50,6 +51,7 @@ export const catalog: Catalog = {
       compatible_packages: [],
       property_types: ["residential"],
       is_ready_made: false,
+      image: "",
     },
     {
       id: 12,
@@ -61,6 +63,7 @@ export const catalog: Catalog = {
       compatible_packages: ["standard", "premium"],
       property_types: ["residential"],
       is_ready_made: false,
+      image: "",
     },
     {
       id: 13,
@@ -72,6 +75,7 @@ export const catalog: Catalog = {
       compatible_packages: [],
       property_types: ["office"],
       is_ready_made: false,
+      image: "",
     },
   ],
   services: [

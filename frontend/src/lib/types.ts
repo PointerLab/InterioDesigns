@@ -42,6 +42,8 @@ export interface FurnitureItem {
   compatible_packages: PackageTier[];
   property_types: PropertyType[];
   is_ready_made: boolean;
+  /** Photo URL, or "" when the item has none. */
+  image: string;
 }
 
 export interface Service {

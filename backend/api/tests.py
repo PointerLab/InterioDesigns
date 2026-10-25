@@ -134,6 +134,8 @@ class CatalogAndPreviewTests(SeededTestCase):
         self.assertTrue(data["services"])
         self.assertIn("residential", data["space_presets"])
         self.assertEqual(data["scope_presets"]["kitchen"]["categories"], ["kitchen"])
+        kitchen = next(item for item in data["furniture_items"] if item["name"] == "Modular Kitchen")
+        self.assertEqual(kitchen["image"], "/images/card-stack-2.jpg")
 
     def test_empty_catalog_explains_how_to_fix(self):
         InteriorPackage.objects.update(is_active=False)

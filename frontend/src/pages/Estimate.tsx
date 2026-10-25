@@ -625,6 +625,14 @@ function FurnitureStep({ catalog, state, setState }: { catalog: Catalog; state: 
                 const quantity = state.furniture[item.id] ?? 0;
                 return (
                   <li key={item.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+                    {item.image && (
+                      <img
+                        src={item.image}
+                        alt=""
+                        loading="lazy"
+                        className="hidden h-14 w-20 shrink-0 rounded-md border border-border object-cover sm:block"
+                      />
+                    )}
                     <div className="min-w-0 flex-1">
                       <p className="flex flex-wrap items-center gap-2 font-medium text-foreground">
                         {item.name}
