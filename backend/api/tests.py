@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.core.management import call_command
 from django.test import TestCase
 from django.utils import timezone
@@ -29,6 +30,7 @@ class SeededTestCase(TestCase):
 
     def setUp(self):
         self.client = APIClient()
+        cache.clear()  # rate limit counters live in the cache
 
     def estimate_payload(self, **overrides):
         kitchen = FurnitureItem.objects.get(name="Modular Kitchen")
@@ -273,6 +275,12 @@ class ContactTests(SeededTestCase):
         response = self.client.post("/api/contact/", {"name": "", "email": "bad", "message": "hi"}, format="json")
         self.assertEqual(response.status_code, 400)
         self.assertEqual(set(response.json()), {"name", "email", "message"})
+
+    def test_contact_form_is_rate_limited(self):
+        data = {"name": "Ravi", "email": "ravi@example.com", "message": "Need a quote for my café."}
+        for _ in range(20):
+            self.assertEqual(self.client.post("/api/contact/", data, format="json").status_code, 201)
+        self.assertEqual(self.client.post("/api/contact/", data, format="json").status_code, 429)
 
 
 class StaffTests(SeededTestCase):

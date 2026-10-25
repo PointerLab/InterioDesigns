@@ -2,6 +2,7 @@ import re
 
 from django.contrib.auth import get_user_model
 from django.core import mail
+from django.core.cache import cache
 from django.test import TestCase
 from rest_framework.test import APIClient
 
@@ -12,6 +13,7 @@ PASSWORD = "ComplexPass!2026"
 class AuthFlowTests(TestCase):
     def setUp(self):
         self.client = APIClient()
+        cache.clear()  # rate limit counters live in the cache
 
     def register(self, **overrides):
         data = {"name": "Asha Rao", "email": "Asha@Example.com", "phone": "9876543210", "password": PASSWORD}
