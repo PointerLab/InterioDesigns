@@ -63,18 +63,6 @@ export const FURNITURE_GROUPS: Record<string, string> = {
   "front-of-house": "Front of house",
 };
 
-const SCOPE_CATEGORIES: Record<Scope, string[] | null> = {
-  full: null,
-  kitchen: ["kitchen"],
-  wardrobe: ["wardrobe"],
-};
-
-const SCOPE_SIZES: Record<Scope, { area: number; rooms: number } | null> = {
-  full: null,
-  kitchen: { area: 120, rooms: 1 },
-  wardrobe: { area: 180, rooms: 2 },
-};
-
 export function presetFor(catalog: Catalog, state: Pick<WizardState, "property_type" | "preset_id">): SpacePreset {
   const presets = catalog.space_presets[state.property_type];
   return presets.find((p) => p.id === state.preset_id) ?? presets[0];
@@ -82,9 +70,11 @@ export function presetFor(catalog: Catalog, state: Pick<WizardState, "property_t
 
 /** Area and room defaults for the chosen preset and scope. */
 export function sizeDefaults(catalog: Catalog, state: Pick<WizardState, "property_type" | "preset_id" | "scope">) {
-  const scoped = state.property_type === "residential" ? SCOPE_SIZES[state.scope] : null;
+  const scoped = state.property_type === "residential" ? catalog.scope_presets[state.scope] : null;
   const preset = presetFor(catalog, state);
-  return scoped ?? { area: preset.area, rooms: preset.rooms };
+  return scoped?.area && scoped.rooms
+    ? { area: scoped.area, rooms: scoped.rooms }
+    : { area: preset.area, rooms: preset.rooms };
 }
 
 function isProperty(value: string | null): value is PropertyType {
@@ -181,7 +171,7 @@ export function furnitureBlocker(item: FurnitureItem, state: WizardState): strin
 }
 
 export function visibleFurniture(catalog: Catalog, state: WizardState): FurnitureItem[] {
-  const categories = state.property_type === "residential" ? SCOPE_CATEGORIES[state.scope] : null;
+  const categories = state.property_type === "residential" ? catalog.scope_presets[state.scope].categories : null;
   return catalog.furniture_items.filter(
     (item) =>
       (!item.property_types.length || item.property_types.includes(state.property_type)) &&

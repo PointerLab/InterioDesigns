@@ -73,7 +73,15 @@ export interface Catalog {
   services: Service[];
   cities: City[];
   space_presets: Record<PropertyType, SpacePreset[]>;
-  scope_presets: Record<Scope, string>;
+  scope_presets: Record<Scope, ScopePreset>;
+}
+
+/** Kitchen-only and wardrobe-only estimates price a smaller area and limit the furniture. */
+export interface ScopePreset {
+  label: string;
+  area: number | null;
+  rooms: number | null;
+  categories: string[] | null;
 }
 
 export interface Selection {

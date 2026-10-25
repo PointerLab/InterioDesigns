@@ -67,7 +67,7 @@ class CatalogView(APIView):
                 "services": ServiceSerializer(RenovationOption.objects.filter(is_active=True), many=True).data,
                 "cities": CitySerializer(LocationMultiplier.objects.filter(is_active=True), many=True).data,
                 "space_presets": SPACE_PRESETS,
-                "scope_presets": {key: value["label"] for key, value in SCOPE_PRESETS.items()},
+                "scope_presets": SCOPE_PRESETS,
             }
         )
 
@@ -82,6 +82,7 @@ def run_estimate(data: dict) -> dict:
         furniture=data["furniture"],
         services=data["services"],
         city=data["city"],
+        scope=data["scope"],
     )
 
 

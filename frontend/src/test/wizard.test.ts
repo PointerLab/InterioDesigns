@@ -92,7 +92,11 @@ const catalog: Catalog = {
     commercial: [{ id: "shop", label: "Shop", area: 400, rooms: 1 }],
     office: [{ id: "startup", label: "Startup office", area: 1200, rooms: 4 }],
   },
-  scope_presets: { full: "Full interior", kitchen: "Kitchen only", wardrobe: "Wardrobes only" },
+  scope_presets: {
+    full: { label: "Full interior", area: null, rooms: null, categories: null },
+    kitchen: { label: "Kitchen only", area: 120, rooms: 1, categories: ["kitchen"] },
+    wardrobe: { label: "Wardrobes only", area: 180, rooms: 2, categories: ["wardrobe"] },
+  },
 };
 
 describe("estimate wizard", () => {

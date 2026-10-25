@@ -101,6 +101,18 @@ class PricingEngineTests(SeededTestCase):
         self.assertEqual(result["services"]["items"], [])
         self.assertEqual(len(result["notes"]), 3)
 
+    def test_scope_limits_furniture(self):
+        package = InteriorPackage.objects.get(tier="standard")
+        kitchen = FurnitureItem.objects.get(name="Modular Kitchen")
+        sofa = FurnitureItem.objects.get(name="Sofa (3-seater)")
+        result = calculate_estimate(
+            package=package, property_type="residential", project_type="new", area_sqft=120, room_count=1,
+            furniture=[{"id": kitchen.id, "quantity": 1}, {"id": sofa.id, "quantity": 1}], services=[],
+            scope="kitchen",
+        )
+        self.assertEqual([row["name"] for row in result["furniture"]["items"]], ["Modular Kitchen"])
+        self.assertEqual(result["notes"], ["Sofa (3-seater) was left out: not part of a kitchen only estimate."])
+
     def test_renovation_adds_time(self):
         package = InteriorPackage.objects.get(tier="basic")
         common = dict(package=package, property_type="residential", area_sqft=500, room_count=2,
@@ -120,6 +132,7 @@ class CatalogAndPreviewTests(SeededTestCase):
         self.assertTrue(data["furniture_items"])
         self.assertTrue(data["services"])
         self.assertIn("residential", data["space_presets"])
+        self.assertEqual(data["scope_presets"]["kitchen"]["categories"], ["kitchen"])
 
     def test_empty_catalog_explains_how_to_fix(self):
         InteriorPackage.objects.update(is_active=False)

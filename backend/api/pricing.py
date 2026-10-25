@@ -112,14 +112,18 @@ def calculate_estimate(
     furniture: list,
     services: list,
     city: str = "",
+    scope: str = "full",
 ) -> dict:
     area = Decimal(area_sqft)
+    scope_preset = SCOPE_PRESETS.get(scope, SCOPE_PRESETS["full"])
 
     def furniture_allowed(item: FurnitureItem):
         if item.compatible_packages and package.tier not in item.compatible_packages:
             return f"not offered with the {package.title}"
         if item.property_types and property_type not in item.property_types:
             return f"not available for {property_type} projects"
+        if scope_preset["categories"] and item.category not in scope_preset["categories"]:
+            return f"not part of a {scope_preset['label'].lower()} estimate"
         return None
 
     def service_allowed(item: RenovationOption):
