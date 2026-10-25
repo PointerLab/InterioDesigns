@@ -20,6 +20,9 @@ urlpatterns = [
     path("consultations/", views.ConsultationListCreateView.as_view(), name="consultation-list"),
     path("consultations/slots/", views.ConsultationSlotsView.as_view(), name="consultation-slots"),
     path("consultations/<int:pk>/cancel/", views.ConsultationCancelView.as_view(), name="consultation-cancel"),
+    path(
+        "consultations/<int:pk>/reschedule/", views.ConsultationRescheduleView.as_view(), name="consultation-reschedule"
+    ),
     # Staff panel
     path("staff/overview/", views.StaffOverviewView.as_view(), name="staff-overview"),
     path("staff/estimates/", views.StaffEstimateListView.as_view(), name="staff-estimates"),

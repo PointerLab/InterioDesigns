@@ -22,6 +22,28 @@ CONSULTATION_SLOTS = ["10:00", "11:00", "12:00", "14:00", "15:00", "16:00", "17:
 BOOKING_WINDOW_DAYS = 60
 
 
+def check_booking_date(value: date) -> date:
+    today = timezone.localdate()
+    if value <= today:
+        raise serializers.ValidationError("Pick a date from tomorrow onwards.")
+    if value > today + timedelta(days=BOOKING_WINDOW_DAYS):
+        raise serializers.ValidationError(f"Bookings open up to {BOOKING_WINDOW_DAYS} days ahead.")
+    if value.weekday() == 6:
+        raise serializers.ValidationError("The studio is closed on Sundays.")
+    return value
+
+
+def check_time_slot(value):
+    if value.strftime("%H:%M") not in CONSULTATION_SLOTS:
+        raise serializers.ValidationError("Choose one of the available time slots.")
+    return value
+
+
+def slot_is_taken(day: date, time_slot, exclude_pk=None) -> bool:
+    taken = Consultation.objects.filter(date=day, time_slot=time_slot).exclude(status=Consultation.Status.CANCELLED)
+    return taken.exclude(pk=exclude_pk).exists() if exclude_pk else taken.exists()
+
+
 class PackageSerializer(serializers.ModelSerializer):
     class Meta:
         model = InteriorPackage
@@ -151,27 +173,36 @@ class ConsultationSerializer(serializers.ModelSerializer):
         return value
 
     def validate_date(self, value: date):
-        today = timezone.localdate()
-        if value <= today:
-            raise serializers.ValidationError("Pick a date from tomorrow onwards.")
-        if value > today + timedelta(days=BOOKING_WINDOW_DAYS):
-            raise serializers.ValidationError(f"Bookings open up to {BOOKING_WINDOW_DAYS} days ahead.")
-        if value.weekday() == 6:
-            raise serializers.ValidationError("The studio is closed on Sundays.")
-        return value
+        return check_booking_date(value)
 
     def validate_time_slot(self, value):
-        if value.strftime("%H:%M") not in CONSULTATION_SLOTS:
-            raise serializers.ValidationError("Choose one of the available time slots.")
-        return value
+        return check_time_slot(value)
 
     def validate(self, attrs):
         if attrs.get("mode") == Consultation.Mode.SITE and not attrs.get("address", "").strip():
             raise serializers.ValidationError({"address": "Add the site address for a site visit."})
-        taken = Consultation.objects.filter(date=attrs["date"], time_slot=attrs["time_slot"]).exclude(
-            status=Consultation.Status.CANCELLED
-        )
-        if taken.exists():
+        if slot_is_taken(attrs["date"], attrs["time_slot"]):
+            raise serializers.ValidationError({"time_slot": "That slot was just booked. Please pick another."})
+        return attrs
+
+
+class RescheduleSerializer(serializers.Serializer):
+    """A new date and time for an existing booking (passed in context as "consultation")."""
+
+    date = serializers.DateField()
+    time_slot = serializers.TimeField(input_formats=["%H:%M", "%H:%M:%S"])
+
+    def validate_date(self, value: date):
+        return check_booking_date(value)
+
+    def validate_time_slot(self, value):
+        return check_time_slot(value)
+
+    def validate(self, attrs):
+        consultation = self.context["consultation"]
+        if (attrs["date"], attrs["time_slot"]) == (consultation.date, consultation.time_slot):
+            raise serializers.ValidationError({"time_slot": "That's already your booking time. Pick a new one."})
+        if slot_is_taken(attrs["date"], attrs["time_slot"], exclude_pk=consultation.pk):
             raise serializers.ValidationError({"time_slot": "That slot was just booked. Please pick another."})
         return attrs
 

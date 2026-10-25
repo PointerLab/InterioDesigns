@@ -38,6 +38,7 @@ from .serializers import (
     EstimateSummarySerializer,
     FurnitureItemSerializer,
     PackageSerializer,
+    RescheduleSerializer,
     ServiceSerializer,
     StaffConsultationSerializer,
     StaffEstimateSerializer,
@@ -320,6 +321,27 @@ class ConsultationCancelView(APIView):
         consultation.status = Consultation.Status.CANCELLED
         consultation.save(update_fields=["status", "updated_at"])
         notifications.consultation_cancelled_by_customer(consultation)
+        return Response(ConsultationSerializer(consultation, context={"request": request}).data)
+
+
+class ConsultationRescheduleView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        consultation = get_object_or_404(Consultation.objects.select_related("estimate"), pk=pk, user=request.user)
+        if consultation.status not in (Consultation.Status.REQUESTED, Consultation.Status.CONFIRMED):
+            return Response(
+                {"detail": f"This consultation is {consultation.get_status_display().lower()}, so it can't be moved."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        serializer = RescheduleSerializer(data=request.data, context={"consultation": consultation})
+        serializer.is_valid(raise_exception=True)
+        consultation.date = serializer.validated_data["date"]
+        consultation.time_slot = serializer.validated_data["time_slot"]
+        # The studio confirms the new time again.
+        consultation.status = Consultation.Status.REQUESTED
+        consultation.save(update_fields=["date", "time_slot", "status", "updated_at"])
+        notifications.consultation_rescheduled(consultation)
         return Response(ConsultationSerializer(consultation, context={"request": request}).data)
 
 

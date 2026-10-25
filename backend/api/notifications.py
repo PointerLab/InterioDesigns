@@ -74,6 +74,16 @@ def consultation_booked(consultation: Consultation) -> None:
     )
 
 
+def consultation_rescheduled(consultation: Consultation) -> None:
+    send(
+        f"{customer_name(consultation)} moved their consultation",
+        f"{customer_name(consultation)} <{consultation.user.email}> picked a new time. It needs confirming again.\n\n"
+        f"{details(consultation)}\n\n"
+        f"Staff panel: {settings.FRONTEND_URL}/staff/consultations",
+        staff_recipients(),
+    )
+
+
 def consultation_cancelled_by_customer(consultation: Consultation) -> None:
     send(
         f"{customer_name(consultation)} cancelled their consultation",

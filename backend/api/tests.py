@@ -315,6 +315,46 @@ class ConsultationTests(SeededTestCase):
             self.book()
         self.assertEqual(mail.outbox[-1].to, ["studio@example.com"])
 
+    def test_reschedule(self):
+        self.client.force_authenticate(self.user)
+        consultation_id = self.book().json()["id"]
+        Consultation.objects.filter(pk=consultation_id).update(status="confirmed", staff_note="See you")
+        mail.outbox.clear()
+        new_day = next_weekday(3)
+        url = f"/api/consultations/{consultation_id}/reschedule/"
+
+        response = self.client.post(url, {"date": new_day.isoformat(), "time_slot": "15:00"}, format="json")
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual((response.json()["date"], response.json()["time_slot"]), (new_day.isoformat(), "15:00"))
+        self.assertEqual(response.json()["status"], "requested", "the studio confirms the new time")
+        self.assertIn("moved their consultation", mail.outbox[0].subject)
+
+        # The old slot is free again; the new one isn't.
+        old = self.client.get(f"/api/consultations/slots/?date={next_weekday().isoformat()}").json()["slots"]
+        self.assertTrue(next(s for s in old if s["time"] == "11:00")["available"])
+        same = self.client.post(url, {"date": new_day.isoformat(), "time_slot": "15:00"}, format="json")
+        self.assertEqual(same.status_code, 400)
+
+    def test_reschedule_rules(self):
+        self.client.force_authenticate(self.other)
+        self.book(time_slot="16:00")
+        self.client.force_authenticate(self.user)
+        consultation_id = self.book().json()["id"]
+        url = f"/api/consultations/{consultation_id}/reschedule/"
+
+        taken = self.client.post(url, {"date": next_weekday().isoformat(), "time_slot": "16:00"}, format="json")
+        self.assertEqual(taken.status_code, 400)
+        self.assertIn("time_slot", taken.json())
+
+        self.client.force_authenticate(self.other)
+        not_mine = self.client.post(url, {"date": next_weekday().isoformat(), "time_slot": "12:00"}, format="json")
+        self.assertEqual(not_mine.status_code, 404)
+
+        self.client.force_authenticate(self.user)
+        self.client.post(f"/api/consultations/{consultation_id}/cancel/")
+        cancelled = self.client.post(url, {"date": next_weekday().isoformat(), "time_slot": "12:00"}, format="json")
+        self.assertEqual(cancelled.status_code, 400)
+
     def test_site_visit_needs_address(self):
         self.client.force_authenticate(self.user)
         response = self.book(mode="site")

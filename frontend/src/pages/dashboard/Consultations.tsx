@@ -54,6 +54,71 @@ function dateBounds() {
   return { min: toISODate(min), max: toISODate(max) };
 }
 
+interface SlotPickerProps {
+  enabled: boolean;
+  date: string;
+  onDateChange: (date: string) => void;
+  slot: string;
+  onSlotChange: (slot: string) => void;
+  errors: Record<string, string>;
+}
+
+/** Date field plus the open time slots for that day. */
+function SlotPicker({ enabled, date, onDateChange, slot, onSlotChange, errors }: SlotPickerProps) {
+  const slots = useQuery({
+    queryKey: ["slots", date],
+    queryFn: () => api.get<SlotAvailability>(`/consultations/slots/?date=${date}`),
+    enabled: enabled && /^\d{4}-\d{2}-\d{2}$/.test(date),
+  });
+  const bounds = dateBounds();
+
+  return (
+    <div className="grid gap-5 sm:grid-cols-[180px_1fr]">
+      <Field id="date" label="Date" error={errors.date}>
+        <Input
+          id="date"
+          type="date"
+          min={bounds.min}
+          max={bounds.max}
+          value={date}
+          onChange={(e) => {
+            onDateChange(e.target.value);
+            onSlotChange("");
+          }}
+        />
+      </Field>
+      <div>
+        <p className="mb-1.5 text-sm font-medium">Time</p>
+        {slots.isLoading ? (
+          <Spinner className="mt-2" />
+        ) : slots.data?.closed_reason ? (
+          <p className="mt-2 text-sm text-muted-foreground">{slots.data.closed_reason}</p>
+        ) : (
+          <div className="grid grid-cols-4 gap-1.5">
+            {slots.data?.slots.map((option) => (
+              <button
+                key={option.time}
+                type="button"
+                disabled={!option.available}
+                onClick={() => onSlotChange(option.time)}
+                className={cn(
+                  "rounded-md border px-2 py-2 text-xs transition-colors disabled:cursor-not-allowed disabled:border-dashed disabled:text-muted-foreground/60 disabled:line-through",
+                  slot === option.time
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border hover:border-foreground/30",
+                )}
+              >
+                {formatTime(option.time)}
+              </button>
+            ))}
+          </div>
+        )}
+        {errors.time_slot && <p className="field-error">{errors.time_slot}</p>}
+      </div>
+    </div>
+  );
+}
+
 interface BookDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -72,12 +137,6 @@ function BookDialog({ open, onOpenChange, defaultEstimate }: BookDialogProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => setEstimate(defaultEstimate), [defaultEstimate]);
-
-  const slots = useQuery({
-    queryKey: ["slots", date],
-    queryFn: () => api.get<SlotAvailability>(`/consultations/slots/?date=${date}`),
-    enabled: open && /^\d{4}-\d{2}-\d{2}$/.test(date),
-  });
 
   const book = useMutation({
     mutationFn: () =>
@@ -120,7 +179,6 @@ function BookDialog({ open, onOpenChange, defaultEstimate }: BookDialogProps) {
     book.mutate();
   };
 
-  const bounds = dateBounds();
   const linked = estimates.data?.find((item) => String(item.id) === estimate);
   const estimateLabel = linked
     ? `${linked.reference} · ${linked.title} (${formatINR(linked.total)})`
@@ -171,52 +229,17 @@ function BookDialog({ open, onOpenChange, defaultEstimate }: BookDialogProps) {
             </Field>
           )}
 
-          <div className="grid gap-5 sm:grid-cols-[180px_1fr]">
-            <Field id="date" label="Date" error={errors.date}>
-              <Input
-                id="date"
-                type="date"
-                min={bounds.min}
-                max={bounds.max}
-                value={date}
-                onChange={(e) => {
-                  setDate(e.target.value);
-                  setSlot("");
-                }}
-              />
-            </Field>
-            <div>
-              <p className="mb-1.5 text-sm font-medium">Time</p>
-              {slots.isLoading ? (
-                <Spinner className="mt-2" />
-              ) : slots.data?.closed_reason ? (
-                <p className="mt-2 text-sm text-muted-foreground">{slots.data.closed_reason}</p>
-              ) : (
-                <div className="grid grid-cols-4 gap-1.5">
-                  {slots.data?.slots.map((option) => (
-                    <button
-                      key={option.time}
-                      type="button"
-                      disabled={!option.available}
-                      onClick={() => {
-                        setSlot(option.time);
-                        setErrors((e) => ({ ...e, time_slot: "" }));
-                      }}
-                      className={cn(
-                        "rounded-md border px-2 py-2 text-xs transition-colors disabled:cursor-not-allowed disabled:border-dashed disabled:text-muted-foreground/60 disabled:line-through",
-                        slot === option.time
-                          ? "border-foreground bg-foreground text-background"
-                          : "border-border hover:border-foreground/30",
-                      )}
-                    >
-                      {formatTime(option.time)}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {errors.time_slot && <p className="field-error">{errors.time_slot}</p>}
-            </div>
-          </div>
+          <SlotPicker
+            enabled={open}
+            date={date}
+            onDateChange={setDate}
+            slot={slot}
+            onSlotChange={(time) => {
+              setSlot(time);
+              setErrors((e) => ({ ...e, time_slot: "" }));
+            }}
+            errors={errors}
+          />
 
           <Field id="estimate" label="Discuss an estimate" optional error={errors.estimate}>
             <Select value={estimate} onValueChange={setEstimate}>
@@ -259,8 +282,86 @@ function BookDialog({ open, onOpenChange, defaultEstimate }: BookDialogProps) {
   );
 }
 
-function ConsultationCard({ consultation, canCancel }: { consultation: Consultation; canCancel: boolean }) {
+interface RescheduleDialogProps {
+  consultation: Consultation;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+function RescheduleDialog({ consultation, open, onOpenChange }: RescheduleDialogProps) {
   const queryClient = useQueryClient();
+  const [date, setDate] = useState(consultation.date);
+  const [slot, setSlot] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const reschedule = useMutation({
+    mutationFn: () =>
+      api.post<Consultation>(`/consultations/${consultation.id}/reschedule/`, { date, time_slot: slot }),
+    onSuccess: (moved) => {
+      toast.success("Booking moved", {
+        description: `${formatWeekdayDate(moved.date)} at ${formatTime(moved.time_slot)}. We'll confirm the new time.`,
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.consultations });
+      queryClient.invalidateQueries({ queryKey: ["slots"] });
+      onOpenChange(false);
+      setSlot("");
+      setErrors({});
+    },
+    onError: (err) => {
+      if (err instanceof ApiError) setErrors(err.fieldErrors);
+      toast.error(errorMessage(err));
+      queryClient.invalidateQueries({ queryKey: ["slots", date] });
+    },
+  });
+
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    if (!slot) {
+      setErrors({ time_slot: "Pick a new time slot." });
+      return;
+    }
+    reschedule.mutate();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle className="font-serif text-2xl font-normal">Reschedule</DialogTitle>
+          <DialogDescription>
+            Now {formatWeekdayDate(consultation.date)} at {formatTime(consultation.time_slot)}. The studio confirms the
+            new time again.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+          <SlotPicker
+            enabled={open}
+            date={date}
+            onDateChange={setDate}
+            slot={slot}
+            onSlotChange={(time) => {
+              setSlot(time);
+              setErrors((e) => ({ ...e, time_slot: "" }));
+            }}
+            errors={errors}
+          />
+          <div className="flex justify-end gap-2 border-t border-border pt-5">
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+              Keep current time
+            </Button>
+            <Button type="submit" disabled={reschedule.isPending}>
+              {reschedule.isPending ? "Moving..." : "Move booking"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ConsultationCard({ consultation, canChange }: { consultation: Consultation; canChange: boolean }) {
+  const queryClient = useQueryClient();
+  const [rescheduling, setRescheduling] = useState(false);
   const cancel = useMutation({
     mutationFn: () => api.post<Consultation>(`/consultations/${consultation.id}/cancel/`),
     onSuccess: () => {
@@ -298,27 +399,33 @@ function ConsultationCard({ consultation, canCancel }: { consultation: Consultat
           </p>
         )}
       </div>
-      {canCancel && (
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="outline" size="sm" disabled={cancel.isPending}>
-              Cancel booking
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Cancel this consultation?</AlertDialogTitle>
-              <AlertDialogDescription>
-                {formatWeekdayDate(consultation.date)} at {formatTime(consultation.time_slot)} will be released for
-                others to book.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Keep booking</AlertDialogCancel>
-              <AlertDialogAction onClick={() => cancel.mutate()}>Cancel booking</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+      {canChange && (
+        <div className="flex shrink-0 flex-wrap gap-2 sm:flex-col">
+          <Button variant="outline" size="sm" onClick={() => setRescheduling(true)}>
+            Reschedule
+          </Button>
+          <RescheduleDialog consultation={consultation} open={rescheduling} onOpenChange={setRescheduling} />
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" disabled={cancel.isPending}>
+                Cancel booking
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Cancel this consultation?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {formatWeekdayDate(consultation.date)} at {formatTime(consultation.time_slot)} will be released for
+                  others to book.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Keep booking</AlertDialogCancel>
+                <AlertDialogAction onClick={() => cancel.mutate()}>Cancel booking</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       )}
     </li>
   );
@@ -372,7 +479,7 @@ const Consultations = () => {
             {upcoming.length ? (
               <ul className="space-y-3">
                 {upcoming.map((c) => (
-                  <ConsultationCard key={c.id} consultation={c} canCancel />
+                  <ConsultationCard key={c.id} consultation={c} canChange />
                 ))}
               </ul>
             ) : (
@@ -384,7 +491,7 @@ const Consultations = () => {
               <h2 className="mb-3 font-sans text-base font-medium">Past and cancelled</h2>
               <ul className="space-y-3 opacity-80">
                 {past.map((c) => (
-                  <ConsultationCard key={c.id} consultation={c} canCancel={false} />
+                  <ConsultationCard key={c.id} consultation={c} canChange={false} />
                 ))}
               </ul>
             </section>

@@ -43,7 +43,7 @@ These accounts are created by `python manage.py seed` (see [Quick start](#quick-
 - **Design gallery**: filter by space, room and style, search, detail pages, "estimate this look", and a saved
   designs shortlist.
 - **Consultations**: book a studio visit, video call or site visit in an open slot (Mon–Sat, no double
-  booking), attach an estimate, see status and notes from the studio, cancel.
+  booking), attach an estimate, see status and notes from the studio, reschedule or cancel.
 - **Account**: sign up, sign in, profile, change password, forgot/reset password by email.
 - **Package comparison** page with live sample totals, contact form, privacy and terms pages.
 
@@ -159,6 +159,7 @@ All endpoints are under `/api/`. Authenticated requests send `Authorization: Bea
 | GET         | `consultations/slots/?date=YYYY-MM-DD`          | public   |
 | GET, POST   | `consultations/`                                | customer |
 | POST        | `consultations/<id>/cancel/`                    | owner    |
+| POST        | `consultations/<id>/reschedule/`                | owner    |
 | POST        | `contact/`                                      | public   |
 | GET         | `staff/overview/`, `staff/estimates/`, `staff/estimates/export/`, `staff/consultations/`, `staff/messages/` | staff |
 | PATCH       | `staff/consultations/<id>/`, `staff/messages/<id>/` | staff |
