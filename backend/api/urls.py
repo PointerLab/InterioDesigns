@@ -11,6 +11,8 @@ urlpatterns = [
     path("estimates/", views.EstimateListCreateView.as_view(), name="estimate-list"),
     path("estimates/<int:pk>/", views.EstimateDetailView.as_view(), name="estimate-detail"),
     path("estimates/<int:pk>/pdf/", views.EstimatePdfView.as_view(), name="estimate-pdf"),
+    path("estimates/<int:pk>/share/", views.EstimateShareView.as_view(), name="estimate-share"),
+    path("shared/<str:token>/", views.SharedEstimateView.as_view(), name="shared-estimate"),
     # Design gallery
     path("designs/", views.DesignListView.as_view(), name="design-list"),
     path("designs/saved/", views.SavedDesignListView.as_view(), name="design-saved"),

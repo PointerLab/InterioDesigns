@@ -138,8 +138,16 @@ class EstimateSerializer(serializers.ModelSerializer):
         fields = [
             "id", "reference", "title", "property_type", "property_type_label", "property_subtype",
             "project_type", "project_type_label", "scope", "scope_label", "area_sqft", "room_count",
-            "package_tier", "package_title", "city", "selections", "result", "total", "created_at", "updated_at",
+            "package_tier", "package_title", "city", "selections", "result", "total", "share_token", "created_at",
+            "updated_at",
         ]
+
+
+class SharedEstimateSerializer(EstimateSerializer):
+    """What anyone with a share link sees: the estimate without ids or the owner's details."""
+
+    class Meta(EstimateSerializer.Meta):
+        fields = [f for f in EstimateSerializer.Meta.fields if f not in ("id", "selections", "share_token")]
 
 
 class EstimateSummarySerializer(EstimateSerializer):

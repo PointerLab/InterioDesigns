@@ -146,6 +146,8 @@ class Estimate(TimestampedModel):
     selections = models.JSONField(default=dict, blank=True)
     result = models.JSONField(default=dict, blank=True)
     total = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    # Set while the owner shares a read-only link to the estimate; cleared to stop sharing.
+    share_token = models.CharField(max_length=32, null=True, blank=True, unique=True)
 
     class Meta:
         ordering = ["-created_at"]

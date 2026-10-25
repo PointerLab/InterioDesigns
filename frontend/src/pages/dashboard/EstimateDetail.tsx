@@ -5,7 +5,17 @@ import { toast } from "sonner";
 import { ErrorState, PageLoader } from "@/components/common/States";
 import EmiCalculator from "@/components/estimate/EmiCalculator";
 import EstimateBreakdown from "@/components/estimate/EstimateBreakdown";
-import { IconArrowLeft, IconCalendar, IconDownload, IconPencil, IconPrinter, IconTrash } from "@/components/icons";
+import EstimateFacts from "@/components/estimate/EstimateFacts";
+import ShareDialog from "@/components/estimate/ShareDialog";
+import {
+  IconArrowLeft,
+  IconCalendar,
+  IconDownload,
+  IconExternal,
+  IconPencil,
+  IconPrinter,
+  IconTrash,
+} from "@/components/icons";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,7 +32,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input";
 import { api, ApiError, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { formatDate, formatNumber } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 import { queryKeys, useEstimate } from "@/lib/queries";
 import { SITE } from "@/lib/site";
 import type { Estimate } from "@/lib/types";
@@ -38,6 +48,7 @@ const EstimateDetail = () => {
   usePageTitle(estimate?.title ?? "Estimate");
   const [renaming, setRenaming] = useState(false);
   const [title, setTitle] = useState("");
+  const [sharing, setSharing] = useState(false);
 
   const downloadPdf = useMutation({
     mutationFn: () => api.download(`/estimates/${id}/pdf/`, `INTERIO-${estimate?.reference ?? id}.pdf`),
@@ -70,15 +81,6 @@ const EstimateDetail = () => {
   if (isLoading) return <PageLoader />;
   if (error instanceof ApiError && error.status === 404) return <NotFound />;
   if (error || !estimate) return <ErrorState error={error} onRetry={() => refetch()} />;
-
-  const facts = [
-    ["Space", `${estimate.property_type_label}${estimate.property_subtype ? ` · ${estimate.property_subtype}` : ""}`],
-    ["Project", estimate.project_type_label],
-    ["Scope", estimate.scope_label],
-    ["Area", `${formatNumber(estimate.area_sqft)} sq.ft · ${estimate.room_count} rooms`],
-    ["Package", estimate.package_title],
-    ["City", estimate.city || "Other city"],
-  ];
 
   const handleRename = (event: FormEvent) => {
     event.preventDefault();
@@ -123,6 +125,9 @@ const EstimateDetail = () => {
           </Button>
           <Button variant="outline" onClick={() => downloadPdf.mutate()} disabled={downloadPdf.isPending}>
             <IconDownload /> {downloadPdf.isPending ? "Preparing PDF..." : "Download PDF"}
+          </Button>
+          <Button variant="outline" onClick={() => setSharing(true)}>
+            <IconExternal /> {estimate.share_token ? "Shared" : "Share"}
           </Button>
           <Button variant="outline" onClick={() => window.print()}>
             <IconPrinter /> Print
@@ -173,14 +178,9 @@ const EstimateDetail = () => {
         </div>
       </div>
 
-      <dl className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border text-sm sm:grid-cols-3">
-        {facts.map(([label, value]) => (
-          <div key={label} className="bg-card px-4 py-3">
-            <dt className="text-muted-foreground">{label}</dt>
-            <dd className="mt-0.5 font-medium text-foreground">{value}</dd>
-          </div>
-        ))}
-      </dl>
+      <div className="mt-8">
+        <EstimateFacts estimate={estimate} />
+      </div>
 
       <div className="print-plain mt-8 rounded-lg border border-border bg-card p-5 md:p-8">
         <EstimateBreakdown result={estimate.result} />
@@ -189,6 +189,8 @@ const EstimateDetail = () => {
       <div className="mt-6">
         <EmiCalculator total={estimate.result.total} />
       </div>
+
+      <ShareDialog estimate={estimate} open={sharing} onOpenChange={setSharing} />
 
       <Dialog open={renaming} onOpenChange={setRenaming}>
         <DialogContent>

@@ -149,6 +149,8 @@ export interface EstimateSummary {
   package_title: string;
   city: string;
   total: number;
+  /** Set while a read-only share link is on. */
+  share_token: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -157,6 +159,9 @@ export interface Estimate extends EstimateSummary {
   selections: { furniture: Selection[]; services: Selection[] };
   result: EstimateResult;
 }
+
+/** What anyone with a share link sees (GET /api/shared/<token>/). */
+export type SharedEstimate = Omit<Estimate, "id" | "selections" | "share_token">;
 
 export interface Option {
   value: string;

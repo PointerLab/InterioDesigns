@@ -205,6 +205,36 @@ class EstimateTests(SeededTestCase):
         self.client.force_authenticate(self.staff)
         self.assertEqual(self.client.get(f"/api/estimates/{estimate_id}/pdf/").status_code, 200)
 
+    def test_share_link(self):
+        self.client.force_authenticate(self.user)
+        created = self.client.post("/api/estimates/", self.estimate_payload(), format="json").json()
+        self.assertIsNone(created["share_token"])
+        share_url = f"/api/estimates/{created['id']}/share/"
+
+        token = self.client.post(share_url).json()["share_token"]
+        self.assertTrue(token)
+        self.assertEqual(self.client.post(share_url).json()["share_token"], token, "sharing again keeps the link")
+        detail = self.client.get(f"/api/estimates/{created['id']}/").json()
+        self.assertEqual(detail["updated_at"], created["updated_at"], "sharing isn't an edit")
+
+        # Anyone with the link can read it, without the owner's details.
+        self.client.force_authenticate(None)
+        shared = self.client.get(f"/api/shared/{token}/")
+        self.assertEqual(shared.status_code, 200)
+        self.assertEqual(shared.json()["total"], created["total"])
+        self.assertTrue({"id", "selections", "share_token", "customer_email"}.isdisjoint(shared.json()))
+        self.assertNotIn("user@example.com", shared.content.decode())
+
+        # Only the owner can share or stop sharing.
+        self.client.force_authenticate(self.other)
+        self.assertEqual(self.client.post(share_url).status_code, 404)
+        self.assertEqual(self.client.delete(share_url).status_code, 404)
+
+        self.client.force_authenticate(self.user)
+        self.assertEqual(self.client.delete(share_url).status_code, 204)
+        self.assertEqual(self.client.get(f"/api/shared/{token}/").status_code, 404)
+        self.assertNotEqual(self.client.post(share_url).json()["share_token"], token, "a new link is a new token")
+
     def test_inr_uses_indian_grouping(self):
         from .quotation import inr
 

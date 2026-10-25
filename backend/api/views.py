@@ -1,4 +1,5 @@
 import csv
+import secrets
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
@@ -40,6 +41,7 @@ from .serializers import (
     PackageSerializer,
     RescheduleSerializer,
     ServiceSerializer,
+    SharedEstimateSerializer,
     StaffConsultationSerializer,
     StaffEstimateSerializer,
     StaffMessageSerializer,
@@ -171,6 +173,33 @@ class EstimateDetailView(APIView):
     def delete(self, request, pk):
         self.get_object(request, pk).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class EstimateShareView(APIView):
+    """Turn the read-only share link on (POST) or off (DELETE)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        estimate = get_object_or_404(Estimate, pk=pk, user=request.user)
+        if not estimate.share_token:
+            estimate.share_token = secrets.token_urlsafe(16)
+            # update() so sharing doesn't count as editing the estimate (updated_at stays put).
+            Estimate.objects.filter(pk=estimate.pk).update(share_token=estimate.share_token)
+        return Response({"share_token": estimate.share_token})
+
+    def delete(self, request, pk):
+        estimate = get_object_or_404(Estimate, pk=pk, user=request.user)
+        Estimate.objects.filter(pk=estimate.pk).update(share_token=None)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SharedEstimateView(APIView):
+    """Public, read-only view of an estimate whose owner shared a link."""
+
+    def get(self, request, token):
+        estimate = get_object_or_404(Estimate.objects.select_related("package"), share_token=token)
+        return Response(SharedEstimateSerializer(estimate).data)
 
 
 class EstimatePdfView(APIView):

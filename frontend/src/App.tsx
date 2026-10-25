@@ -19,6 +19,7 @@ const Packages = lazy(() => import("./pages/Packages"));
 const Estimate = lazy(() => import("./pages/Estimate"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Legal = lazy(() => import("./pages/Legal"));
+const SharedEstimate = lazy(() => import("./pages/SharedEstimate"));
 const Login = lazy(() => import("./pages/auth/Login"));
 const Signup = lazy(() => import("./pages/auth/Signup"));
 const ForgotPassword = lazy(() => import("./pages/auth/ForgotPassword"));
@@ -62,6 +63,7 @@ const App = () => (
                 <Route path="contact" element={<Contact />} />
                 <Route path="privacy" element={<Legal page="privacy" />} />
                 <Route path="terms" element={<Legal page="terms" />} />
+                <Route path="shared/:token" element={<SharedEstimate />} />
 
                 <Route
                   path="dashboard"
