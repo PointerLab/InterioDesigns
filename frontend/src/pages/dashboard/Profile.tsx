@@ -5,11 +5,11 @@ import PageHeader from "@/components/common/PageHeader";
 import PasswordInput from "@/components/common/PasswordInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { api, ApiError, errorMessage } from "@/lib/api";
+import { api, ApiError, errorMessage, tokenStore } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
 import { useCatalog } from "@/lib/queries";
-import type { User } from "@/lib/types";
+import type { AuthResponse, User } from "@/lib/types";
 import { usePageTitle } from "@/lib/usePageTitle";
 
 function ProfileForm({ user }: { user: User }) {
@@ -101,10 +101,12 @@ function PasswordForm() {
     setSaving(true);
     setErrors({});
     try {
-      await api.post("/auth/change-password/", {
+      // The server signs out other devices and sends this one fresh tokens.
+      const tokens = await api.post<AuthResponse>("/auth/change-password/", {
         current_password: form.current_password,
         new_password: form.new_password,
       });
+      tokenStore.set({ access: tokens.access, refresh: tokens.refresh });
       setForm(empty);
       toast.success("Password changed");
     } catch (error) {

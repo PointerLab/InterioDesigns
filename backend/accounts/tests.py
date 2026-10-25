@@ -72,8 +72,26 @@ class AuthFlowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("access", response.data)
 
+    def refresh(self, token):
+        return self.client.post("/api/auth/token/refresh/", {"refresh": token}, format="json")
+
+    def test_refresh_tokens_are_single_use(self):
+        refresh = self.register().data["refresh"]
+        self.assertEqual(self.refresh(refresh).status_code, 200)
+        self.assertEqual(self.refresh(refresh).status_code, 401)
+
+    def test_logout_revokes_the_refresh_token(self):
+        refresh = self.register().data["refresh"]
+        response = self.client.post("/api/auth/logout/", {"refresh": refresh}, format="json")
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(self.refresh(refresh).status_code, 401)
+        # Logging out twice, or with junk, is harmless.
+        self.assertEqual(self.client.post("/api/auth/logout/", {"refresh": refresh}, format="json").status_code, 204)
+        self.assertEqual(self.client.post("/api/auth/logout/", {"refresh": "junk"}, format="json").status_code, 204)
+
     def test_change_password(self):
-        token = self.register().data["access"]
+        tokens = self.register().data
+        token = tokens["access"]
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
         bad = self.client.post(
             "/api/auth/change-password/", {"current_password": "wrong", "new_password": "Another!Pass99"}, format="json"
@@ -84,9 +102,12 @@ class AuthFlowTests(TestCase):
         )
         self.assertEqual(ok.status_code, 200)
         self.assertTrue(User.objects.get(email="asha@example.com").check_password("Another!Pass99"))
+        # Other sessions are signed out; this one gets fresh tokens.
+        self.assertEqual(self.refresh(tokens["refresh"]).status_code, 401)
+        self.assertEqual(self.refresh(ok.data["refresh"]).status_code, 200)
 
     def test_password_reset_flow(self):
-        self.register()
+        old_refresh = self.register().data["refresh"]
         response = self.client.post("/api/auth/password-reset/", {"email": "asha@example.com"}, format="json")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(mail.outbox), 1)
@@ -97,6 +118,7 @@ class AuthFlowTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertTrue(User.objects.get(email="asha@example.com").check_password("Fresh!Pass2026"))
+        self.assertEqual(self.refresh(old_refresh).status_code, 401)
 
         reused = self.client.post(
             "/api/auth/password-reset/confirm/", {"uid": uid, "token": token, "password": "Other!Pass2026"}, format="json"

@@ -143,6 +143,7 @@ All endpoints are under `/api/`. Authenticated requests send `Authorization: Bea
 | ----------- | ----------------------------------------------- | -------- |
 | POST        | `auth/register/`, `auth/login/`                 | public   |
 | POST        | `auth/token/refresh/`                           | public   |
+| POST        | `auth/logout/` (revokes the refresh token)      | public   |
 | POST        | `auth/password-reset/`, `.../confirm/`          | public   |
 | GET, PATCH  | `auth/me/`                                      | customer |
 | POST        | `auth/change-password/`                         | customer |

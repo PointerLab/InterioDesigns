@@ -41,6 +41,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(() => {
+    // Revoke the refresh token on the server. Signing out here doesn't wait for it.
+    const refresh = tokenStore.get()?.refresh;
+    if (refresh) api.post("/auth/logout/", { refresh }).catch(() => {});
     tokenStore.set(null);
     setUserState(null);
     setStatus("anonymous");

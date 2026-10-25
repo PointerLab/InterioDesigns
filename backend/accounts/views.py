@@ -10,6 +10,8 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .serializers import (
@@ -31,6 +33,12 @@ def auth_payload(user) -> dict:
         "refresh": str(refresh),
         "user": UserSerializer(user).data,
     }
+
+
+def sign_out_everywhere(user) -> None:
+    """Revoke every refresh token issued to the user. Access tokens still run out on their own (60 min)."""
+    tokens = OutstandingToken.objects.filter(user=user, blacklistedtoken__isnull=True)
+    BlacklistedToken.objects.bulk_create([BlacklistedToken(token=token) for token in tokens])
 
 
 class RegisterView(APIView):
@@ -62,6 +70,17 @@ class LoginView(APIView):
         return Response(auth_payload(user))
 
 
+class LogoutView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        try:
+            RefreshToken(str(request.data.get("refresh", ""))).blacklist()
+        except TokenError:
+            pass  # Already expired or revoked, so the session is over either way.
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -83,7 +102,9 @@ class ChangePasswordView(APIView):
         serializer.is_valid(raise_exception=True)
         request.user.set_password(serializer.validated_data["new_password"])
         request.user.save()
-        return Response({"detail": "Password updated."})
+        # Sign out other devices, and hand this one fresh tokens so it stays signed in.
+        sign_out_everywhere(request.user)
+        return Response({"detail": "Password updated.", **auth_payload(request.user)})
 
 
 class PasswordResetRequestView(APIView):
@@ -142,4 +163,5 @@ class PasswordResetConfirmView(APIView):
 
         user.set_password(data["password"])
         user.save()
+        sign_out_everywhere(user)
         return Response({"detail": "Password has been reset. You can sign in now."})
