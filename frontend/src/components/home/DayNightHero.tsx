@@ -41,11 +41,10 @@ const hotspots: Hotspot[] = [
   },
 ];
 
-const getFrameUrl = (index: number) => {
-  const padded = index.toString().padStart(3, "0");
-  const delay = index % 4 === 1 ? "0.07" : "0.06";
-  return `/frames/frame_${padded}_delay-${delay}s.jpg`;
-};
+const getFrameUrl = (index: number) => `/frames/frame_${index.toString().padStart(3, "0")}.webp`;
+
+// With reduced motion the room is shown as a still image and the frames are not downloaded.
+const prefersReducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
 const drawImageCover = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, image: HTMLImageElement) => {
   const { width: canvasWidth, height: canvasHeight } = canvas;
@@ -71,8 +70,8 @@ const DayNightHero = () => {
   const lastUiFrameRef = useRef(0);
 
   const [progress, setProgress] = useState(0);
-  const [frameLoadCount, setFrameLoadCount] = useState(0);
   const [activeHotspot, setActiveHotspot] = useState("sofa");
+  const [reducedMotion] = useState(prefersReducedMotion);
 
   const frameUrls = useMemo(() => Array.from({ length: TOTAL_FRAMES }, (_, idx) => getFrameUrl(idx)), []);
 
@@ -123,7 +122,6 @@ const DayNightHero = () => {
       image.onload = () => {
         if (cancelled) return;
         framesRef.current[index] = image;
-        setFrameLoadCount((count) => count + 1);
         if (index === 0 || Math.abs(index - Math.round(smoothProgressRef.current * (TOTAL_FRAMES - 1))) <= 1) {
           drawFrameFromProgress(smoothProgressRef.current);
         }
@@ -131,6 +129,7 @@ const DayNightHero = () => {
     };
 
     loadFrame(0);
+    if (reducedMotion) return;
 
     let index = 1;
     const batchSize = 8;
@@ -151,9 +150,11 @@ const DayNightHero = () => {
     return () => {
       cancelled = true;
     };
-  }, [frameUrls]);
+  }, [frameUrls, reducedMotion]);
 
   useEffect(() => {
+    if (reducedMotion) return;
+
     const updateTarget = () => {
       const section = sectionRef.current;
       if (!section) return;
@@ -196,14 +197,14 @@ const DayNightHero = () => {
       window.removeEventListener("resize", updateTarget);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, []);
+  }, [reducedMotion]);
 
   const activeCard = hotspots.find((spot) => spot.id === activeHotspot) ?? hotspots[0];
   const moodOpacity = Math.min(0.8, progress * 0.95);
   const dayTint = Math.max(0.07, 0.2 - progress * 0.18);
 
   return (
-    <section ref={sectionRef} className="relative h-[230vh]">
+    <section ref={sectionRef} className={reducedMotion ? "relative" : "relative h-[230vh]"}>
       <div className="sticky top-16 h-[calc(100vh-4rem)] overflow-hidden bg-[#efe8e2]">
         <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" aria-label="Day to night room animation" />
 
@@ -224,7 +225,7 @@ const DayNightHero = () => {
             <button
               key={spot.id}
               className="absolute z-30 hidden -translate-x-1/2 -translate-y-1/2 sm:block"
-              style={{ left: `${spot.x}%`, top: `${spot.y}%`, opacity: progress > 0.03 ? 1 : 0 }}
+              style={{ left: `${spot.x}%`, top: `${spot.y}%`, opacity: reducedMotion || progress > 0.03 ? 1 : 0 }}
               onMouseEnter={() => setActiveHotspot(spot.id)}
               onFocus={() => setActiveHotspot(spot.id)}
               onClick={() => setActiveHotspot(spot.id)}
@@ -280,7 +281,9 @@ const DayNightHero = () => {
                   <Link to="/designs">Browse designs</Link>
                 </Button>
               </div>
-              <p className="mt-5 text-xs text-muted-foreground">Scroll to see the room from day to night.</p>
+              {!reducedMotion && (
+                <p className="mt-5 text-xs text-muted-foreground">Scroll to see the room from day to night.</p>
+              )}
             </motion.div>
           </div>
         </div>
