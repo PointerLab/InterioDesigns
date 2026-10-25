@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ErrorState, PageLoader } from "@/components/common/States";
+import EmiCalculator from "@/components/estimate/EmiCalculator";
 import EstimateBreakdown from "@/components/estimate/EstimateBreakdown";
 import { IconArrowLeft, IconCalendar, IconDownload, IconPencil, IconPrinter, IconTrash } from "@/components/icons";
 import {
@@ -183,6 +184,10 @@ const EstimateDetail = () => {
 
       <div className="print-plain mt-8 rounded-lg border border-border bg-card p-5 md:p-8">
         <EstimateBreakdown result={estimate.result} />
+      </div>
+
+      <div className="mt-6">
+        <EmiCalculator total={estimate.result.total} />
       </div>
 
       <Dialog open={renaming} onOpenChange={setRenaming}>
