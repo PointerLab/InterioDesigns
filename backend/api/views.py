@@ -24,6 +24,7 @@ from .models import (
     SavedDesign,
 )
 from .pricing import SCOPE_PRESETS, SPACE_PRESETS, calculate_estimate
+from .quotation import build_quotation
 from .serializers import (
     BOOKING_WINDOW_DAYS,
     CONSULTATION_SLOTS,
@@ -168,6 +169,21 @@ class EstimateDetailView(APIView):
     def delete(self, request, pk):
         self.get_object(request, pk).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class EstimatePdfView(APIView):
+    """Branded PDF quotation. Customers get their own estimates; staff can get any."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        estimates = Estimate.objects.select_related("user", "user__profile", "package")
+        if not request.user.is_staff:
+            estimates = estimates.filter(user=request.user)
+        estimate = get_object_or_404(estimates, pk=pk)
+        response = HttpResponse(build_quotation(estimate), content_type="application/pdf")
+        response["Content-Disposition"] = f'attachment; filename="INTERIO-{estimate.reference}.pdf"'
+        return response
 
 
 def saved_design_ids(request) -> set:

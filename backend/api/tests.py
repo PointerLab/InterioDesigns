@@ -190,6 +190,28 @@ class EstimateTests(SeededTestCase):
         self.assertEqual(self.client.get(f"/api/estimates/{estimate_id}/").status_code, 404)
         self.assertEqual(self.client.get("/api/estimates/").json(), [])
 
+    def test_pdf_quotation(self):
+        self.client.force_authenticate(self.user)
+        estimate_id = self.client.post("/api/estimates/", self.estimate_payload(), format="json").json()["id"]
+        response = self.client.get(f"/api/estimates/{estimate_id}/pdf/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertIn(f"INTERIO-EST-{estimate_id:05d}.pdf", response["Content-Disposition"])
+        self.assertTrue(response.content.startswith(b"%PDF"))
+
+        self.client.force_authenticate(self.other)
+        self.assertEqual(self.client.get(f"/api/estimates/{estimate_id}/pdf/").status_code, 404)
+        self.client.force_authenticate(self.staff)
+        self.assertEqual(self.client.get(f"/api/estimates/{estimate_id}/pdf/").status_code, 200)
+
+    def test_inr_uses_indian_grouping(self):
+        from .quotation import inr
+
+        self.assertEqual(inr(708000), "Rs. 7,08,000")
+        self.assertEqual(inr(12345678), "Rs. 1,23,45,678")
+        self.assertEqual(inr(999), "Rs. 999")
+        self.assertEqual(inr(-1500), "-Rs. 1,500")
+
 
 class DesignTests(SeededTestCase):
     def test_list_and_filter(self):

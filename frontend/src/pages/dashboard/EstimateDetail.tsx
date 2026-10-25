@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ErrorState, PageLoader } from "@/components/common/States";
 import EstimateBreakdown from "@/components/estimate/EstimateBreakdown";
-import { IconArrowLeft, IconCalendar, IconPencil, IconPrinter, IconTrash } from "@/components/icons";
+import { IconArrowLeft, IconCalendar, IconDownload, IconPencil, IconPrinter, IconTrash } from "@/components/icons";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,6 +37,11 @@ const EstimateDetail = () => {
   usePageTitle(estimate?.title ?? "Estimate");
   const [renaming, setRenaming] = useState(false);
   const [title, setTitle] = useState("");
+
+  const downloadPdf = useMutation({
+    mutationFn: () => api.download(`/estimates/${id}/pdf/`, `INTERIO-${estimate?.reference ?? id}.pdf`),
+    onError: (err) => toast.error(errorMessage(err)),
+  });
 
   const rename = useMutation({
     mutationFn: (value: string) => api.patch<Estimate>(`/estimates/${id}/`, { title: value }),
@@ -115,8 +120,11 @@ const EstimateDetail = () => {
               <IconCalendar /> Book consultation
             </Link>
           </Button>
+          <Button variant="outline" onClick={() => downloadPdf.mutate()} disabled={downloadPdf.isPending}>
+            <IconDownload /> {downloadPdf.isPending ? "Preparing PDF..." : "Download PDF"}
+          </Button>
           <Button variant="outline" onClick={() => window.print()}>
-            <IconPrinter /> Download PDF
+            <IconPrinter /> Print
           </Button>
           <Button asChild variant="outline">
             <Link to={`/estimate?edit=${estimate.id}`}>

@@ -10,6 +10,7 @@ urlpatterns = [
     path("estimates/preview/", views.EstimatePreviewView.as_view(), name="estimate-preview"),
     path("estimates/", views.EstimateListCreateView.as_view(), name="estimate-list"),
     path("estimates/<int:pk>/", views.EstimateDetailView.as_view(), name="estimate-detail"),
+    path("estimates/<int:pk>/pdf/", views.EstimatePdfView.as_view(), name="estimate-pdf"),
     # Design gallery
     path("designs/", views.DesignListView.as_view(), name="design-list"),
     path("designs/saved/", views.SavedDesignListView.as_view(), name="design-saved"),

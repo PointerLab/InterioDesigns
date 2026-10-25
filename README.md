@@ -37,7 +37,8 @@ These accounts are created by `python manage.py seed` (see [Quick start](#quick-
   offices, plus kitchen-only and wardrobe-only estimates.
 - **Transparent breakdown**: package work, itemised furniture and services, city price adjustment, 18% GST,
   expected range, cost split by category and a phase-by-phase timeline.
-- **Saved estimates**: save, rename, edit and recalculate, delete, and download as PDF (print layout).
+- **Saved estimates**: save, rename, edit and recalculate, delete, print, and download a branded PDF quotation
+  (itemised costs, cost split, timeline, package inclusions, 30-day validity).
   Anonymous visitors can use the whole estimator; answers are kept if they sign in to save.
 - **Design gallery**: filter by space, room and style, search, detail pages, "estimate this look", and a saved
   designs shortlist.
@@ -151,6 +152,7 @@ All endpoints are under `/api/`. Authenticated requests send `Authorization: Bea
 | POST        | `estimates/preview/`                            | public   |
 | GET, POST   | `estimates/`                                    | customer |
 | GET, PUT, PATCH, DELETE | `estimates/<id>/`                   | owner    |
+| GET         | `estimates/<id>/pdf/` (PDF quotation)           | owner or staff |
 | GET         | `designs/`, `designs/<slug>/`                   | public   |
 | POST, DELETE | `designs/<slug>/save/`                         | customer |
 | GET         | `designs/saved/`                                | customer |

@@ -23,6 +23,18 @@ function LeadDialog({ id, onClose }: { id: number | null; onClose: () => void })
     queryFn: () => api.get<StaffEstimateDetail>(`/staff/estimates/${id}/`),
     enabled: Boolean(id),
   });
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async (lead: StaffEstimateDetail) => {
+    setDownloading(true);
+    try {
+      await api.download(`/estimates/${lead.id}/pdf/`, `INTERIO-${lead.reference}.pdf`);
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
     <Dialog open={Boolean(id)} onOpenChange={(open) => !open && onClose()}>
@@ -59,6 +71,11 @@ function LeadDialog({ id, onClose }: { id: number | null; onClose: () => void })
               {data.project_type_label} · {data.scope_label} · {formatNumber(data.area_sqft)} sq.ft ·{" "}
               {data.package_title} · {data.city || "Other city"}
             </p>
+            <div>
+              <Button variant="outline" size="sm" onClick={() => handleDownload(data)} disabled={downloading}>
+                <IconDownload /> {downloading ? "Preparing PDF..." : "Quotation PDF"}
+              </Button>
+            </div>
             <EstimateBreakdown result={data.result} />
           </>
         )}
