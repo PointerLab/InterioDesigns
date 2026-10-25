@@ -63,6 +63,7 @@ You need **Python 3.10+** and **Node.js 18+**.
 
 ```bash
 cd backend
+cp .env.example .env               # Windows: copy .env.example .env  (turns on debug mode)
 python3 -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
@@ -94,9 +95,11 @@ Without SMTP settings, emails (password reset links) are printed in the terminal
 
 ## Configuration
 
-Both apps work with no configuration. To change things, copy the examples:
+The frontend works with no configuration. The backend reads `backend/.env`:
 
-- `backend/.env.example` → `backend/.env` – secret key, debug, PostgreSQL `DATABASE_URL`, SMTP, frontend URL
+- `backend/.env.example` → `backend/.env` – secret key, debug, PostgreSQL `DATABASE_URL`, SMTP, frontend URL.
+  Debug mode is **off** unless `DJANGO_DEBUG=true`, so a server that forgets the setting never shows debug pages.
+  Without debug mode Django won't serve admin styles or uploaded images, so keep the copied `.env` for local work.
 - `frontend/.env.example` → `frontend/.env` – backend address for the dev proxy
 
 ## How the estimate is calculated

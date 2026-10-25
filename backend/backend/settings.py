@@ -10,6 +10,8 @@ from datetime import timedelta
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+from django.core.exceptions import ImproperlyConfigured
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -31,8 +33,21 @@ def env_list(name: str, default: str = "") -> list[str]:
 load_env_file(BASE_DIR / ".env")
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-dev-only-change-me")
-DEBUG = os.getenv("DJANGO_DEBUG", "true").lower() == "true"
+# Off unless turned on, so a server that forgets to set it never shows debug pages.
+# backend/.env.example turns it on for local development.
+DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() == "true"
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "*" if DEBUG else "localhost,127.0.0.1")
+
+# Set on a server that is only reached over HTTPS (Render, Railway, ...).
+SECURE_HTTPS = os.getenv("DJANGO_SECURE_HTTPS", "false").lower() == "true"
+if SECURE_HTTPS:
+    if len(SECRET_KEY) < 50 or SECRET_KEY.startswith("django-insecure"):
+        raise ImproperlyConfigured("Set DJANGO_SECRET_KEY to a long random value before deploying.")
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = int(os.getenv("DJANGO_HSTS_SECONDS", "3600"))
 
 # Where the React app lives. Used to build links in emails (password reset).
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8085").rstrip("/")
