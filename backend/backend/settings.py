@@ -41,7 +41,8 @@ ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "*" if DEBUG else "localhost,12
 # Set on a server that is only reached over HTTPS (Render, Railway, ...).
 SECURE_HTTPS = os.getenv("DJANGO_SECURE_HTTPS", "false").lower() == "true"
 if SECURE_HTTPS:
-    if len(SECRET_KEY) < 50 or SECRET_KEY.startswith("django-insecure"):
+    # 32+ characters: JWT signing needs at least 256 bits (Render's generated keys are 44).
+    if len(SECRET_KEY) < 32 or SECRET_KEY.startswith("django-insecure"):
         raise ImproperlyConfigured("Set DJANGO_SECRET_KEY to a long random value before deploying.")
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_SSL_REDIRECT = True
@@ -76,6 +77,12 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+if not DEBUG:
+    # Serves the admin's CSS and JS after collectstatic, so no separate web server is needed.
+    # (In debug mode runserver serves them itself.)
+    MIDDLEWARE.insert(MIDDLEWARE.index("django.middleware.security.SecurityMiddleware") + 1,
+                      "whitenoise.middleware.WhiteNoiseMiddleware")
 
 ROOT_URLCONF = "backend.urls"
 
@@ -137,8 +144,14 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-MEDIA_URL = "/media/"
+# Set to the full backend URL (https://api.example.com/media/) when the frontend is on another domain,
+# so uploaded images load from the backend.
+MEDIA_URL = os.getenv("MEDIA_URL", "/media/")
 MEDIA_ROOT = BASE_DIR / "media"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
+}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
