@@ -4,8 +4,10 @@ import PageHeader from "@/components/common/PageHeader";
 import { EmptyState, ErrorState } from "@/components/common/States";
 import { Button } from "@/components/ui/button";
 import { useSavedDesigns } from "@/lib/queries";
+import { usePageTitle } from "@/lib/usePageTitle";
 
 const SavedDesigns = () => {
+  usePageTitle("Saved designs");
   const { data, isLoading, error, refetch } = useSavedDesigns();
 
   return (

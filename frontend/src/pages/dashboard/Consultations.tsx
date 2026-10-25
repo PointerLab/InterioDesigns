@@ -29,6 +29,7 @@ import { queryKeys, useConsultations, useEstimates } from "@/lib/queries";
 import { SITE } from "@/lib/site";
 import type { Consultation, ConsultationMode, SlotAvailability } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { usePageTitle } from "@/lib/usePageTitle";
 
 const MODES: { value: ConsultationMode; label: string; description: string; icon: typeof IconHome }[] = [
   { value: "studio", label: "Studio visit", description: "See materials and samples in person", icon: IconHome },
@@ -324,6 +325,7 @@ function ConsultationCard({ consultation, canCancel }: { consultation: Consultat
 }
 
 const Consultations = () => {
+  usePageTitle("Consultations");
   const { data, isLoading, error, refetch } = useConsultations();
   const [params, setParams] = useSearchParams();
   const [open, setOpen] = useState(false);

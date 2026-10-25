@@ -11,6 +11,7 @@ import { api, errorMessage } from "@/lib/api";
 import { formatINR, formatTime, formatWeekdayDate } from "@/lib/format";
 import type { ConsultationStatus, StaffConsultation } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { usePageTitle } from "@/lib/usePageTitle";
 
 const FILTERS: { value: string; label: string }[] = [
   { value: "upcoming", label: "Upcoming" },
@@ -29,6 +30,7 @@ const STATUSES: { value: ConsultationStatus; label: string }[] = [
 ];
 
 const Consultations = () => {
+  usePageTitle("Consultations");
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState("upcoming");
   const [editing, setEditing] = useState<StaffConsultation | null>(null);

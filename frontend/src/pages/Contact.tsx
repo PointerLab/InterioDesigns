@@ -9,10 +9,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { api, ApiError, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { SITE } from "@/lib/site";
+import { usePageTitle } from "@/lib/usePageTitle";
 
 const EMPTY = { name: "", email: "", phone: "", message: "" };
 
 const Contact = () => {
+  usePageTitle("Contact");
   const { user } = useAuth();
   const [form, setForm] = useState(EMPTY);
   const [errors, setErrors] = useState<Record<string, string>>({});

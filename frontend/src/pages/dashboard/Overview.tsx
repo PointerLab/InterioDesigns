@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { formatDate, formatINR, formatTime, formatWeekdayDate, greeting, parseLocalDate } from "@/lib/format";
 import { useConsultations, useEstimates, useSavedDesigns } from "@/lib/queries";
+import { usePageTitle } from "@/lib/usePageTitle";
 
 const Overview = () => {
+  usePageTitle("Dashboard");
   const { user } = useAuth();
   const estimates = useEstimates();
   const saved = useSavedDesigns();

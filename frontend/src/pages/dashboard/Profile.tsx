@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
 import { useCatalog } from "@/lib/queries";
 import type { User } from "@/lib/types";
+import { usePageTitle } from "@/lib/usePageTitle";
 
 function ProfileForm({ user }: { user: User }) {
   const { setUser } = useAuth();
@@ -153,6 +154,7 @@ function PasswordForm() {
 }
 
 const Profile = () => {
+  usePageTitle("Profile");
   const { user } = useAuth();
   if (!user) return null;
   return (

@@ -6,8 +6,10 @@ import { ErrorState, PageLoader } from "@/components/common/States";
 import { api } from "@/lib/api";
 import { formatDate, formatINR, formatINRShort, formatTime, formatWeekdayDate } from "@/lib/format";
 import type { StaffOverview } from "@/lib/types";
+import { usePageTitle } from "@/lib/usePageTitle";
 
 const Overview = () => {
+  usePageTitle("Studio overview");
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["staff", "overview"],
     queryFn: () => api.get<StaffOverview>("/staff/overview/"),

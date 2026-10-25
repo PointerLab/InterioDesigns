@@ -4,9 +4,11 @@ import Field from "@/components/common/Field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api, ApiError, errorMessage } from "@/lib/api";
+import { usePageTitle } from "@/lib/usePageTitle";
 import AuthLayout from "./AuthLayout";
 
 const ForgotPassword = () => {
+  usePageTitle("Forgot password");
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);

@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ApiError, errorMessage } from "@/lib/api";
 import { safeNext, useAuth } from "@/lib/auth";
+import { usePageTitle } from "@/lib/usePageTitle";
 import AuthLayout from "./AuthLayout";
 
 const Login = () => {
+  usePageTitle("Sign in");
   const { login, user } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();

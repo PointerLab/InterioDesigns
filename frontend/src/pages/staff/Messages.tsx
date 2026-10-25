@@ -9,6 +9,7 @@ import { api, errorMessage } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import type { StaffMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { usePageTitle } from "@/lib/usePageTitle";
 
 const FILTERS = [
   { value: "false", label: "Open" },
@@ -17,6 +18,7 @@ const FILTERS = [
 ];
 
 const Messages = () => {
+  usePageTitle("Messages");
   const queryClient = useQueryClient();
   const [resolved, setResolved] = useState("false");
 

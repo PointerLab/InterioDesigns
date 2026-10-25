@@ -8,6 +8,7 @@ import { api, ApiError } from "@/lib/api";
 import { formatINR, titleCase } from "@/lib/format";
 import { queryKeys } from "@/lib/queries";
 import type { Design } from "@/lib/types";
+import { usePageTitle } from "@/lib/usePageTitle";
 import NotFound from "./NotFound";
 
 function estimateLink(design: Design) {
@@ -22,6 +23,7 @@ const DesignDetail = () => {
     queryKey: queryKeys.design(slug),
     queryFn: () => api.get<{ design: Design; related: Design[] }>(`/designs/${slug}/`),
   });
+  usePageTitle(data?.design.title ?? "Design");
 
   if (isLoading) return <PageLoader />;
   if (error instanceof ApiError && error.status === 404) return <NotFound />;

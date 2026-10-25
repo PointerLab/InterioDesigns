@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { api, errorMessage } from "@/lib/api";
 import { formatDate, formatINR, formatNumber } from "@/lib/format";
 import type { StaffEstimate, StaffEstimateDetail } from "@/lib/types";
+import { usePageTitle } from "@/lib/usePageTitle";
 
 const ALL = "all";
 
@@ -67,6 +68,7 @@ function LeadDialog({ id, onClose }: { id: number | null; onClose: () => void })
 }
 
 const Leads = () => {
+  usePageTitle("Estimates & leads");
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [pkg, setPkg] = useState(ALL);

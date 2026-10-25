@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDate, formatINR, formatNumber } from "@/lib/format";
 import { useEstimates } from "@/lib/queries";
+import { usePageTitle } from "@/lib/usePageTitle";
 
 const Estimates = () => {
+  usePageTitle("My estimates");
   const { data, isLoading, error, refetch } = useEstimates();
 
   return (

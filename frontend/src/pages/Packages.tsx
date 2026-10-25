@@ -8,6 +8,7 @@ import { api } from "@/lib/api";
 import { formatINR } from "@/lib/format";
 import { useCatalog } from "@/lib/queries";
 import type { Catalog, EstimateInput, EstimateResult, PackageTier } from "@/lib/types";
+import { usePageTitle } from "@/lib/usePageTitle";
 
 // A common reference project so packages can be compared on a real number.
 const SAMPLE_ITEMS: [string, number][] = [
@@ -43,6 +44,7 @@ const FURNITURE_GRADE: Record<PackageTier, string> = {
 };
 
 const Packages = () => {
+  usePageTitle("Packages");
   const { data: catalog, isLoading, error, refetch } = useCatalog();
 
   const samples = useQueries({

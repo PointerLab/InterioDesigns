@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { SITE } from "@/lib/site";
+import { usePageTitle } from "@/lib/usePageTitle";
 
 const UPDATED = "27 September 2026";
 
@@ -70,6 +71,7 @@ const TERMS = [
 const Legal = ({ page }: { page: "privacy" | "terms" }) => {
   const sections = page === "privacy" ? PRIVACY : TERMS;
   const title = page === "privacy" ? "Privacy policy" : "Terms of service";
+  usePageTitle(title);
 
   return (
     <div className="container-page max-w-3xl py-14">

@@ -7,6 +7,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Button } from "@/components/ui/button";
 import { formatINR } from "@/lib/format";
 import { useCatalog, useDesigns } from "@/lib/queries";
+import { usePageTitle } from "@/lib/usePageTitle";
 
 const STEPS = [
   {
@@ -124,6 +125,7 @@ function SectionHeading({
 }
 
 const Home = () => {
+  usePageTitle();
   const { data: catalog } = useCatalog();
   const featured = useDesigns("featured=true&limit=6");
 

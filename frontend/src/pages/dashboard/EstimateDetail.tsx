@@ -25,6 +25,7 @@ import { formatDate, formatNumber } from "@/lib/format";
 import { queryKeys, useEstimate } from "@/lib/queries";
 import { SITE } from "@/lib/site";
 import type { Estimate } from "@/lib/types";
+import { usePageTitle } from "@/lib/usePageTitle";
 import NotFound from "../NotFound";
 
 const EstimateDetail = () => {
@@ -33,6 +34,7 @@ const EstimateDetail = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: estimate, isLoading, error, refetch } = useEstimate(id || null);
+  usePageTitle(estimate?.title ?? "Estimate");
   const [renaming, setRenaming] = useState(false);
   const [title, setTitle] = useState("");
 

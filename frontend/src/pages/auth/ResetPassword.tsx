@@ -4,9 +4,11 @@ import Field from "@/components/common/Field";
 import PasswordInput from "@/components/common/PasswordInput";
 import { Button } from "@/components/ui/button";
 import { api, ApiError, errorMessage } from "@/lib/api";
+import { usePageTitle } from "@/lib/usePageTitle";
 import AuthLayout from "./AuthLayout";
 
 const ResetPassword = () => {
+  usePageTitle("Reset password");
   const [params] = useSearchParams();
   const uid = params.get("uid") ?? "";
   const token = params.get("token") ?? "";

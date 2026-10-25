@@ -8,9 +8,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { ApiError, errorMessage } from "@/lib/api";
 import { safeNext, useAuth } from "@/lib/auth";
+import { usePageTitle } from "@/lib/usePageTitle";
 import AuthLayout from "./AuthLayout";
 
 const Signup = () => {
+  usePageTitle("Create account");
   const { register, user } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();

@@ -40,6 +40,7 @@ import { formatINR, formatNumber } from "@/lib/format";
 import { queryKeys, useCatalog } from "@/lib/queries";
 import type { Catalog, Estimate as SavedEstimate, EstimateInput, EstimateResult } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { usePageTitle } from "@/lib/usePageTitle";
 
 const OTHER_CITY = "__other";
 
@@ -94,6 +95,7 @@ function StepHeading({ title, description }: { title: string; description: strin
 }
 
 const Estimate = () => {
+  usePageTitle("Cost estimator");
   const { data: catalog, isLoading, error, refetch } = useCatalog();
   const [params] = useSearchParams();
   const editId = Number(params.get("edit")) || null;
