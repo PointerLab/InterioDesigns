@@ -1,170 +1,171 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Mail, Phone, MapPin } from "lucide-react";
+import { useEffect, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
+import { toast } from "sonner";
+import Field from "@/components/common/Field";
+import { IconCalendar, IconClock, IconMail, IconPhone, IconPin } from "@/components/icons";
 import { Button } from "@/components/ui/button";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
-import { toast } from "@/hooks/use-toast";
-import { apiUrl } from "@/lib/api";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { api, ApiError, errorMessage } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { SITE } from "@/lib/site";
+
+const EMPTY = { name: "", email: "", phone: "", message: "" };
 
 const Contact = () => {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    message: "",
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuth();
+  const [form, setForm] = useState(EMPTY);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [sent, setSent] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  useEffect(() => {
+    if (user)
+      setForm((f) => ({ ...f, name: f.name || user.name, email: f.email || user.email, phone: f.phone || user.phone }));
+  }, [user]);
+
+  const update = (field: keyof typeof EMPTY) => (value: string) => {
+    setForm((f) => ({ ...f, [field]: value }));
+    setErrors((e) => ({ ...e, [field]: "" }));
+  };
+
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setErrors({});
     try {
-      const response = await fetch(apiUrl("/contact/"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to send message");
-      }
-
-      toast({
-        title: "Message sent",
-        description: "Thanks for reaching out. Our team will get back to you soon.",
-      });
-      setFormData({ name: "", email: "", message: "" });
+      await api.post("/contact/", form);
+      setSent(true);
+      setForm({ ...EMPTY, name: user?.name ?? "", email: user?.email ?? "", phone: user?.phone ?? "" });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to send message right now.";
-      toast({
-        title: "Could not send message",
-        description: message,
-        variant: "destructive",
-      });
+      if (error instanceof ApiError) setErrors(error.fieldErrors);
+      toast.error(errorMessage(error));
     } finally {
-      setIsSubmitting(false);
+      setSubmitting(false);
     }
   };
 
+  const details = [
+    { icon: IconPin, label: "Studio", value: SITE.address.join(", ") },
+    { icon: IconPhone, label: "Phone", value: SITE.phone, href: SITE.phoneHref },
+    { icon: IconMail, label: "Email", value: SITE.email, href: `mailto:${SITE.email}` },
+    { icon: IconClock, label: "Hours", value: SITE.hours },
+  ];
+
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      
-      <main className="pt-28 pb-16 px-6 md:px-12 lg:px-20">
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-12"
-          >
-            <h1 className="font-serif text-4xl md:text-5xl font-bold text-foreground mb-4">
-              Get in Touch
-            </h1>
-            <p className="text-muted-foreground text-lg max-w-md mx-auto">
-              Let's discuss how we can transform your space into something extraordinary.
-            </p>
-          </motion.div>
+    <div className="container-page py-14">
+      <div className="grid gap-12 lg:grid-cols-[1fr_1.1fr]">
+        <div>
+          <p className="eyebrow">Contact</p>
+          <h1 className="mt-2 font-serif text-4xl text-foreground md:text-5xl">Let's talk about your space</h1>
+          <p className="mt-4 max-w-md text-muted-foreground">
+            Questions about packages, a project that doesn't fit the estimator, or feedback on a quote. Write to us and
+            a designer will reply within one working day.
+          </p>
 
-          <div className="grid md:grid-cols-2 gap-12">
-            {/* Contact Info */}
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="space-y-8"
-            >
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Mail className="h-5 w-5 text-primary" />
-                </div>
+          <dl className="mt-10 space-y-5">
+            {details.map(({ icon: Icon, label, value, href }) => (
+              <div key={label} className="flex gap-4">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border bg-card text-primary">
+                  <Icon className="h-5 w-5" />
+                </span>
                 <div>
-                  <h3 className="font-serif text-lg font-semibold text-foreground mb-1">Email</h3>
-                  <p className="text-muted-foreground">hello@interio.design</p>
+                  <dt className="text-sm font-medium text-foreground">{label}</dt>
+                  <dd className="text-sm text-muted-foreground">
+                    {href ? (
+                      <a href={href} className="hover:text-foreground">
+                        {value}
+                      </a>
+                    ) : (
+                      value
+                    )}
+                  </dd>
                 </div>
               </div>
+            ))}
+          </dl>
 
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Phone className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-serif text-lg font-semibold text-foreground mb-1">Phone</h3>
-                  <p className="text-muted-foreground">+1 (555) 123-4567</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <MapPin className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-serif text-lg font-semibold text-foreground mb-1">Studio</h3>
-                  <p className="text-muted-foreground">
-                    123 Design Avenue<br />
-                    New York, NY 10001
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Contact Form */}
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="bg-card rounded-3xl p-8 shadow-lg"
-            >
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Name</label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="input-cream w-full"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Email</label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="input-cream w-full"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Message</label>
-                  <textarea
-                    rows={4}
-                    value={formData.message}
-                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    className="input-cream w-full resize-none"
-                    required
-                  />
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full rounded-3xl py-6 text-base font-medium hover-scale"
+          <div className="mt-10 rounded-lg border border-border bg-card p-5">
+            <div className="flex items-start gap-3">
+              <IconCalendar className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <div>
+                <p className="font-medium text-foreground">Prefer to meet a designer?</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Book a studio visit, video call or site visit from your dashboard. You can attach a saved estimate so
+                  we come prepared.
+                </p>
+                <Link
+                  to="/dashboard/consultations"
+                  className="mt-3 inline-block text-sm font-medium text-primary hover:underline"
                 >
-                  {isSubmitting ? "Sending..." : "Send Message"}
-                </Button>
-              </form>
-            </motion.div>
+                  Book a consultation
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
-      </main>
 
-      <Footer />
+        <div className="rounded-lg border border-border bg-card p-6 md:p-8">
+          {sent ? (
+            <div className="py-10 text-center">
+              <p className="font-serif text-2xl text-foreground">Message sent</p>
+              <p className="mx-auto mt-2 max-w-sm text-muted-foreground">
+                Thanks for writing to us. We usually reply within one working day.
+              </p>
+              <Button variant="outline" className="mt-6" onClick={() => setSent(false)}>
+                Send another message
+              </Button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+              <h2 className="font-serif text-2xl text-foreground">Send us a message</h2>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Field id="name" label="Name" error={errors.name}>
+                  <Input
+                    id="name"
+                    value={form.name}
+                    onChange={(e) => update("name")(e.target.value)}
+                    required
+                    autoComplete="name"
+                  />
+                </Field>
+                <Field id="phone" label="Phone" optional error={errors.phone}>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={form.phone}
+                    onChange={(e) => update("phone")(e.target.value)}
+                    autoComplete="tel"
+                  />
+                </Field>
+              </div>
+              <Field id="email" label="Email" error={errors.email}>
+                <Input
+                  id="email"
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => update("email")(e.target.value)}
+                  required
+                  autoComplete="email"
+                />
+              </Field>
+              <Field id="message" label="How can we help?" error={errors.message}>
+                <Textarea
+                  id="message"
+                  rows={6}
+                  value={form.message}
+                  onChange={(e) => update("message")(e.target.value)}
+                  placeholder="Tell us about the space, your timeline and budget."
+                  required
+                />
+              </Field>
+              <Button type="submit" className="w-full" disabled={submitting}>
+                {submitting ? "Sending..." : "Send message"}
+              </Button>
+            </form>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
